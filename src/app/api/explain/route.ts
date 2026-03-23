@@ -1,12 +1,10 @@
 /**
  * POST /api/explain
  *
- * SFEN局面を受け取り、Gemini APIで解説を生成してストリーミングで返す。
- * history パラメータで会話コンテキストを維持する。
- *
  * パイプライン切り替え:
  *   X-Pipeline: plan   → ExplanationPlan ベース（デフォルト）
- *   X-Pipeline: legacy → 従来の buildUserMessage
+ *     - 非ストリーミング: LLM全文取得 → verify → 本文 or fallback
+ *   X-Pipeline: legacy → 従来の buildUserMessage（ストリーミング）
  */
 
 import { NextRequest } from "next/server";
@@ -66,25 +64,112 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const systemPrompt = getSystemPrompt();
-
-  // Build user message and plan based on pipeline
-  let userMessage: string;
-  let plan: ExplanationPlan | null = null;
-
   if (pipeline === "plan") {
-    const canonical = fromSfenPosition(sfenPosition);
-    plan = buildPlan(canonical, body.engineData);
-    userMessage = buildPlanPrompt(plan);
+    return handlePlanPipeline(sfenPosition, body);
   } else {
-    userMessage = buildUserMessage({
-      position: sfenPosition,
-      engineData: body.engineData,
-      question: body.question,
-    });
+    return handleLegacyPipeline(sfenPosition, body);
   }
+}
 
-  // Build conversation contents from history + current message
+// ============================================================
+// Plan pipeline (non-streaming, verify-before-display)
+// ============================================================
+
+async function handlePlanPipeline(
+  sfenPosition: ReturnType<typeof parseSfen>,
+  body: ExplainRequest
+) {
+  const systemPrompt = getSystemPrompt();
+  const canonical = fromSfenPosition(sfenPosition);
+  const plan = buildPlan(canonical, body.engineData);
+  const userMessage = buildPlanPrompt(plan);
+
+  const contents: Content[] = [
+    { role: "user", parts: [{ text: userMessage }] },
+  ];
+
+  try {
+    const client = getClient();
+    const response = await client.models.generateContent({
+      model: MODEL,
+      config: {
+        maxOutputTokens: MAX_TOKENS,
+        systemInstruction: systemPrompt,
+      },
+      contents,
+    });
+
+    const fullOutput = response.text ?? "";
+
+    // Verify before display
+    const verifyResult = verifyExplanation(fullOutput, plan);
+
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      start(controller) {
+        if (verifyResult.passed) {
+          // Verified: send the full output
+          const data = JSON.stringify({ type: "text", content: fullOutput });
+          controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+        } else {
+          // Failed: send fallback
+          const fallbackContent = buildFallback(plan, verifyResult.issues);
+          const data = JSON.stringify({ type: "fallback", content: fallbackContent });
+          controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+        }
+
+        // Always send verify result
+        const verifyData = JSON.stringify({
+          type: "verify",
+          passed: verifyResult.passed,
+          issues: verifyResult.issues,
+        });
+        controller.enqueue(encoder.encode(`data: ${verifyData}\n\n`));
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      },
+    });
+
+    return new Response(readable, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
+  } catch (err) {
+    console.error("Gemini API error:", err);
+    return Response.json(
+      { error: "Gemini APIの呼び出しに失敗しました" },
+      { status: 500 }
+    );
+  }
+}
+
+function buildFallback(plan: ExplanationPlan, issues: string[]): string {
+  const factsSummary = plan.facts.slice(0, 3).join("\n");
+  return (
+    `【局面の要点】\n${factsSummary}\n\n` +
+    `【学びのポイント】\n${plan.teachingPoint}\n\n` +
+    `※ 詳細な手順説明はまだ安定しなかったため、要点のみを表示しています。`
+  );
+}
+
+// ============================================================
+// Legacy pipeline (streaming, backward compat)
+// ============================================================
+
+async function handleLegacyPipeline(
+  sfenPosition: ReturnType<typeof parseSfen>,
+  body: ExplainRequest
+) {
+  const systemPrompt = getSystemPrompt();
+  const userMessage = buildUserMessage({
+    position: sfenPosition,
+    engineData: body.engineData,
+    question: body.question,
+  });
+
   const contents: Content[] = [];
 
   if (body.history && body.history.length > 0) {
@@ -96,12 +181,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // For follow-up questions in legacy mode, send just the question text
-  const isFollowUp =
-    pipeline !== "plan" &&
-    body.history &&
-    body.history.length > 0 &&
-    body.question;
+  const isFollowUp = body.history && body.history.length > 0 && body.question;
   contents.push({
     role: "user",
     parts: [{ text: isFollowUp ? body.question! : userMessage }],
@@ -121,35 +201,14 @@ export async function POST(request: NextRequest) {
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {
-        let fullOutput = "";
         try {
           for await (const chunk of stream) {
             const text = chunk.text;
             if (text) {
-              fullOutput += text;
-              const data = JSON.stringify({
-                type: "text",
-                content: text,
-              });
-              controller.enqueue(
-                encoder.encode(`data: ${data}\n\n`)
-              );
+              const data = JSON.stringify({ type: "text", content: text });
+              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
             }
           }
-
-          // Run verifier for plan pipeline
-          if (plan) {
-            const verifyResult = verifyExplanation(fullOutput, plan);
-            const verifyData = JSON.stringify({
-              type: "verify",
-              passed: verifyResult.passed,
-              issues: verifyResult.issues,
-            });
-            controller.enqueue(
-              encoder.encode(`data: ${verifyData}\n\n`)
-            );
-          }
-
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         } catch (err) {
@@ -158,9 +217,7 @@ export async function POST(request: NextRequest) {
             type: "error",
             content: "解説の生成中にエラーが発生しました",
           });
-          controller.enqueue(
-            encoder.encode(`data: ${errorData}\n\n`)
-          );
+          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
           controller.close();
         }
       },
