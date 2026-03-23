@@ -264,6 +264,11 @@ export function buildPlanPrompt(plan: ExplanationPlan): string {
   if (plan.bestMove.mainLine && plan.bestMove.mainLine.length > 0) {
     lines.push(`読み筋: ${plan.bestMove.mainLine.join(" → ")}`);
   }
+  // mate時の追加指示
+  const hasMate = plan.facts.some((f) => f.includes("手詰み"));
+  if (hasMate) {
+    lines.push("※ 詰み手順を正確に説明してください。手順の各手の意味も初心者に分かるように補足してください。");
+  }
   lines.push("");
 
   // 比較候補

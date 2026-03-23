@@ -47,13 +47,16 @@ describe("buildPlan", () => {
     expect(plan.forbiddenClaims[0]).toContain("評価値の数字");
   });
 
-  it("pos-003 (終盤詰み): focus に bestmove_meaning + concept", () => {
+  it("pos-003 (終盤詰み): focus に bestmove_meaning + concept, 詰み手順あり", () => {
     const { canonical, engineData } = loadPosition("pos-003-endgame.json");
     const plan = buildPlan(canonical, engineData);
 
     expect(plan.focus).toEqual(["bestmove_meaning", "concept"]);
     expect(plan.bestMove.ja).toBe("▲5一飛打");
-    expect(plan.facts.some((f) => f.includes("詰み"))).toBe(true);
+    expect(plan.bestMove.reason).toContain("手で詰み");
+    expect(plan.bestMove.mainLine).toBeDefined();
+    expect(plan.bestMove.mainLine!.length).toBeGreaterThan(0);
+    expect(plan.facts.some((f) => f.includes("詰み手順"))).toBe(true);
     expect(plan.commonMistake).toBeDefined();
   });
 
