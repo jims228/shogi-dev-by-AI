@@ -21,6 +21,8 @@ import type { Content } from "@google/genai";
 import { fromSfenPosition } from "@/lib/shogi/canonical";
 import { buildPlan } from "@/lib/ai/planner";
 import { verifyExplanation } from "@/lib/ai/verifier";
+import { lookupEngineData } from "@/lib/ai/engine-lookup";
+import { positionToSfen } from "@/lib/shogi/move";
 
 interface Message {
   role: "user" | "assistant";
@@ -81,7 +83,11 @@ async function handlePlanPipeline(
 ) {
   const systemPrompt = getSystemPrompt();
   const canonical = fromSfenPosition(sfenPosition);
-  const plan = buildPlan(canonical, body.engineData);
+
+  // Engine data: client-provided > lookup from pre-computed data
+  const engineData = body.engineData ?? lookupEngineData(body.position);
+
+  const plan = buildPlan(canonical, engineData);
   const userMessage = buildPlanPrompt(plan);
 
   const contents: Content[] = [
