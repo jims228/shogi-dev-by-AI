@@ -30,9 +30,16 @@
 ## 開発方針
 
 - **2日完成 + 品質ゲート** — Day 1-2で完成レベルを目指し、Day 2終了時に人間が品質判定して分岐する
+- **plan-first パイプライン（DEC-014）** — LLMは盤面分析器ではなく verbalizer。`Canonicalize → Plan → Verbalize → Verify` の4段構成
 - **小さく作る** — 小さなdiff、小さな判断、小さなPR
 - **解説品質が最優先** — 「この変更は解説品質の向上に貢献するか？」を常に問う
 - **慎重に正確に** — 将棋の事実に関わる部分は特に慎重に。間違いは後で致命的になる
+
+### 現在のフェーズ
+
+- Day 2 品質ゲート **C判定** 達成（正確性3.8 / 分かりやすさ4.2 / 具体性3.8）
+- Day 3 plan パイプライン実装完了（legacy 3.9 → plan **4.1**）
+- Phase 2: W1/W2修正、Verifier API統合、Q&A plan-grounded化
 
 ---
 
@@ -97,6 +104,8 @@
 ---
 
 ## 詳細ドキュメント
+
+全ドキュメントの一覧: `docs/index.md`
 
 - 要件: `docs/requirements.md`
 - 解説品質: `docs/explanation-quality.md`
