@@ -78,6 +78,29 @@ describe("buildPlan", () => {
     expect(plan.confidence).toBe("high");
   });
 
+  it("全5局面で facts に生の評価値数字が含まれない", () => {
+    const files = [
+      "pos-001-opening.json",
+      "pos-002-middle.json",
+      "pos-003-endgame.json",
+      "pos-004-ranging-rook.json",
+      "pos-005-endgame-yose.json",
+    ];
+    const rawEvalPattern = /[+\-]\d{2,}/;
+
+    for (const file of files) {
+      const { canonical, engineData } = loadPosition(file);
+      const plan = buildPlan(canonical, engineData);
+
+      for (const fact of plan.facts) {
+        expect(
+          rawEvalPattern.test(fact),
+          `${file}: fact "${fact}" に生の評価値が含まれている`
+        ).toBe(false);
+      }
+    }
+  });
+
   it("エンジンデータなしでも生成できる", () => {
     const pos = parseSfen(
       "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"

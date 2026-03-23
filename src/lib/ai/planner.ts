@@ -12,6 +12,26 @@ import { estimatePhase } from "../shogi/parser";
 import type { EngineData, EngineCandidate } from "./prompt";
 import type { ExplanationPlan, FocusCategory } from "./plan";
 
+/**
+ * 評価値を初心者向けの日本語表現に変換する
+ */
+export function verbalizeEval(evalValue: number, evalType?: string): string {
+  if (evalType === "mate") {
+    const mateIn = Math.abs(evalValue);
+    const side = evalValue >= 0 ? "先手" : "後手";
+    return `${side}の勝ち確定（${mateIn}手詰み）`;
+  }
+
+  const abs = Math.abs(evalValue);
+  const side = evalValue >= 0 ? "先手" : "後手";
+
+  if (abs < 100) return "ほぼ互角";
+  if (abs < 300) return `少し${side}が有利`;
+  if (abs < 600) return `${side}が有利`;
+  if (abs < 1000) return `かなり${side}が有利`;
+  return `はっきり${side}の勝勢`;
+}
+
 /** エンジンデータJSON にある拡張フィールド（API経由では渡されない） */
 export interface ExtendedEngineData extends EngineData {
   common_mistake?: string;
@@ -167,23 +187,21 @@ function buildFacts(
     const moveName = engineData.bestmove_ja ?? engineData.bestmove;
     facts.push(`最善手: ${moveName}`);
 
+    // 評価値は言語化して渡す（数字は含めない）
+    facts.push(`形勢: ${verbalizeEval(engineData.eval, engineData.eval_type)}`);
+
     if (engineData.eval_type === "mate") {
-      const side = engineData.eval >= 0 ? "先手" : "後手";
-      const mateIn = Math.abs(engineData.eval);
-      facts.push(`評価: ${side}の${mateIn}手詰み`);
-      // 詰み手順を facts に含める
       const pvLine = engineData.pv_ja ?? engineData.pv;
       if (pvLine && pvLine.length > 0) {
         facts.push(`詰み手順: ${pvLine.join(" → ")}`);
       }
-    } else {
-      facts.push(`評価値: ${engineData.eval >= 0 ? "+" : ""}${engineData.eval}`);
     }
 
     for (const c of engineData.candidates) {
       const name = c.move_ja ?? c.move;
+      const evalVerbal = verbalizeEval(c.eval, engineData.eval_type);
       const desc = c.description ? `: ${c.description}` : "";
-      facts.push(`候補手 ${name} (${c.eval >= 0 ? "+" : ""}${c.eval})${desc}`);
+      facts.push(`候補手 ${name}（${evalVerbal}）${desc}`);
     }
   }
 
@@ -227,10 +245,13 @@ function selectAlternative(
     const c = engineData.candidates[i];
     const diff = Math.abs(best.eval - c.eval);
     if (diff >= 100) {
+      const altVerbal = verbalizeEval(c.eval);
+      const whyWorse = c.description
+        ?? `この手だと${altVerbal}になります（最善手より劣る）`;
       return {
         usi: c.move,
         ja: c.move_ja ?? c.move,
-        whyWorse: c.description ?? `最善手より${diff}点劣る`,
+        whyWorse,
       };
     }
   }
