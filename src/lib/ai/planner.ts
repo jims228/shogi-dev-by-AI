@@ -11,6 +11,7 @@ import { PIECE_NAMES, COLOR_NAMES } from "../shogi/types";
 import { estimatePhase } from "../shogi/parser";
 import type { EngineData, EngineCandidate } from "./prompt";
 import type { ExplanationPlan, FocusCategory } from "./plan";
+import { kingSafety, materialBalance, attackMap } from "../shogi/features";
 
 /**
  * 評価値を初心者向けの日本語表現に変換する
@@ -177,6 +178,16 @@ function buildFacts(
   const kings = findKings(position.board);
   if (kings.sente) facts.push(`先手玉: ${kings.sente}`);
   if (kings.gote) facts.push(`後手玉: ${kings.gote}`);
+
+  // 玉安全度
+  const senteSafety = kingSafety(position.board, "b");
+  const goteSafety = kingSafety(position.board, "w");
+  facts.push(`先手玉の安全度: ${senteSafety.label}（守備駒${senteSafety.defenderCount}枚、敵の利き${senteSafety.threatCount}箇所）`);
+  facts.push(`後手玉の安全度: ${goteSafety.label}（守備駒${goteSafety.defenderCount}枚、敵の利き${goteSafety.threatCount}箇所）`);
+
+  // 駒割り
+  const material = materialBalance(position.board, position.hands.sente, position.hands.gote);
+  facts.push(`駒割り: ${material}`);
 
   // 持ち駒
   facts.push(`先手の持ち駒: ${formatHand(position.hands.sente)}`);
