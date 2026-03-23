@@ -70,8 +70,8 @@ export function buildPlan(
   // --- 2. Facts 生成 ---
   const facts = buildFacts(position, engineData);
 
-  // --- 3. bestMove ---
-  const bestMove = buildBestMove(engineData);
+  // --- 3. bestMove (mate時はpv_jaを必ず設定) ---
+  const bestMove = buildBestMove(engineData, isMate);
 
   // --- 4. meaningfulAlternative ---
   const alt = selectAlternative(engineData);
@@ -169,7 +169,13 @@ function buildFacts(
 
     if (engineData.eval_type === "mate") {
       const side = engineData.eval >= 0 ? "先手" : "後手";
-      facts.push(`評価: ${side}の${Math.abs(engineData.eval)}手詰み`);
+      const mateIn = Math.abs(engineData.eval);
+      facts.push(`評価: ${side}の${mateIn}手詰み`);
+      // 詰み手順を facts に含める
+      const pvLine = engineData.pv_ja ?? engineData.pv;
+      if (pvLine && pvLine.length > 0) {
+        facts.push(`詰み手順: ${pvLine.join(" → ")}`);
+      }
     } else {
       facts.push(`評価値: ${engineData.eval >= 0 ? "+" : ""}${engineData.eval}`);
     }
@@ -186,17 +192,25 @@ function buildFacts(
 
 // --- Best move ---
 
-function buildBestMove(engineData?: EngineData): ExplanationPlan["bestMove"] {
+function buildBestMove(engineData?: EngineData, isMate?: boolean): ExplanationPlan["bestMove"] {
   if (!engineData || engineData.candidates.length === 0) {
     return { usi: "", ja: "不明", reason: "エンジンデータがありません" };
   }
 
   const best = engineData.candidates[0];
+  const mainLine = engineData.pv_ja ?? engineData.pv;
+
+  let reason = best.description ?? "最善手として評価されています";
+  if (isMate) {
+    const mateIn = Math.abs(engineData.eval);
+    reason = `${mateIn}手で詰みます。${reason}`;
+  }
+
   return {
     usi: best.move,
     ja: best.move_ja ?? best.move,
-    reason: best.description ?? "最善手として評価されています",
-    mainLine: engineData.pv_ja ?? engineData.pv,
+    reason,
+    mainLine,
   };
 }
 
