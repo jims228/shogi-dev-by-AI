@@ -6,7 +6,7 @@
 
 import { readFileSync } from "fs";
 import { join } from "path";
-import type { SfenPosition, Hand, AnyPieceType, Color } from "../shogi/types";
+import type { SfenPosition, Hand, AnyPieceType, BoardPiece } from "../shogi/types";
 import { PIECE_NAMES, COLOR_NAMES } from "../shogi/types";
 import { estimatePhase } from "../shogi/parser";
 
@@ -14,13 +14,17 @@ import { estimatePhase } from "../shogi/parser";
 export interface EngineCandidate {
   move: string;
   eval: number;
+  move_ja?: string;
+  description?: string;
 }
 
 /** エンジンデータ（オプション） */
 export interface EngineData {
   bestmove: string;
   eval: number;
+  eval_type?: "cp" | "mate";
   candidates: EngineCandidate[];
+  bestmove_ja?: string;
 }
 
 /** プロンプト構築の入力 */
@@ -67,22 +71,46 @@ export function buildUserMessage(input: PromptInput): string {
   lines.push(buildBoardText(position));
   lines.push("");
 
+  // P2: 玉の位置を明示的に追加
+  const kingPositions = findKingPositions(position);
+  if (kingPositions.sente || kingPositions.gote) {
+    lines.push("【玉の位置】");
+    if (kingPositions.sente) {
+      lines.push(`先手玉: ${kingPositions.sente}`);
+    }
+    if (kingPositions.gote) {
+      lines.push(`後手玉: ${kingPositions.gote}`);
+    }
+    lines.push("");
+  }
+
   lines.push(`【先手の持ち駒】${formatHand(position.senteHand)}`);
   lines.push(`【後手の持ち駒】${formatHand(position.goteHand)}`);
   lines.push("");
 
   if (engineData) {
     lines.push("【エンジン評価】");
-    lines.push(`最善手: ${engineData.bestmove}`);
-    const evalSign = engineData.eval >= 0 ? "+" : "";
-    const evalLabel = engineData.eval >= 0 ? "先手有利" : "後手有利";
-    lines.push(`評価値: ${evalSign}${engineData.eval}（${evalLabel}）`);
+    // P1: move_ja があればそれを使う
+    lines.push(`最善手: ${engineData.bestmove_ja ?? engineData.bestmove}`);
+
+    // P3: mate評価値対応
+    if (engineData.eval_type === "mate") {
+      const mateIn = Math.abs(engineData.eval);
+      const side = engineData.eval >= 0 ? "先手" : "後手";
+      lines.push(`評価値: ${side}の勝ち確定（${mateIn}手で詰み）`);
+    } else {
+      const evalSign = engineData.eval >= 0 ? "+" : "";
+      const evalLabel = engineData.eval >= 0 ? "先手有利" : "後手有利";
+      lines.push(`評価値: ${evalSign}${engineData.eval}（${evalLabel}）`);
+    }
 
     if (engineData.candidates.length > 0) {
       lines.push("候補手:");
       engineData.candidates.forEach((c, i) => {
+        const moveName = c.move_ja ?? c.move;
         const sign = c.eval >= 0 ? "+" : "";
-        lines.push(`  ${i + 1}. ${c.move} (評価値: ${sign}${c.eval})`);
+        const desc = c.description ? ` — ${c.description}` : "";
+        lines.push(`  ${i + 1}. ${moveName} (評価値: ${sign}${c.eval})${desc}`);
       });
     }
     lines.push("");
@@ -137,4 +165,51 @@ function formatHand(hand: Hand): string {
     }
   }
   return parts.length > 0 ? parts.join(" ") : "なし";
+}
+
+/** 筋の数字表記 (col=0→9筋, col=8→1筋) */
+const FILE_NAMES = ["９", "８", "７", "６", "５", "４", "３", "２", "１"];
+/** 段の漢数字表記 (row=0→一段, row=8→九段) */
+const RANK_NAMES = ["一", "二", "三", "四", "五", "六", "七", "八", "九"];
+
+/** 盤面の相対位置の説明 */
+function describePosition(row: number, col: number): string {
+  const file = FILE_NAMES[col];
+  const rank = RANK_NAMES[row];
+  let area: string;
+  if (row <= 2) {
+    area = col <= 2 ? "盤の右上" : col >= 6 ? "盤の左上" : "盤の上部中央";
+  } else if (row >= 6) {
+    area = col <= 2 ? "盤の右下" : col >= 6 ? "盤の左下" : "盤の下部中央";
+  } else {
+    area = col <= 2 ? "盤の右側" : col >= 6 ? "盤の左側" : "盤の中央";
+  }
+  return `${file}${rank}（${area}）`;
+}
+
+/**
+ * 先手玉・後手玉の位置を盤面から見つけて日本語で返す
+ */
+function findKingPositions(position: SfenPosition): {
+  sente: string | null;
+  gote: string | null;
+} {
+  let sente: string | null = null;
+  let gote: string | null = null;
+
+  for (let row = 0; row < 9; row++) {
+    for (let col = 0; col < 9; col++) {
+      const cell: BoardPiece | null = position.board[row][col];
+      if (cell && cell.type === "K") {
+        const pos = describePosition(row, col);
+        if (cell.color === "b") {
+          sente = pos;
+        } else {
+          gote = pos;
+        }
+      }
+    }
+  }
+
+  return { sente, gote };
 }
