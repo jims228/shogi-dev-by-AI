@@ -9,6 +9,7 @@ import { join } from "path";
 import type { SfenPosition, Hand, AnyPieceType, BoardPiece } from "../shogi/types";
 import { PIECE_NAMES, COLOR_NAMES } from "../shogi/types";
 import { estimatePhase } from "../shogi/parser";
+import type { ExplanationPlan } from "./plan";
 
 /** エンジン候補手 */
 export interface EngineCandidate {
@@ -221,4 +222,85 @@ function findKingPositions(position: SfenPosition): {
   }
 
   return { sente, gote };
+}
+
+// ============================================================
+// Plan-based prompt (TASK-016)
+// ============================================================
+
+const FOCUS_LABELS: Record<string, string> = {
+  threat: "脅威・急所",
+  bestmove_meaning: "最善手の意味",
+  comparison: "候補手の比較",
+  king_safety: "玉の安全度",
+  piece_activity: "駒の働き",
+  concept: "基本概念",
+  common_mistake: "よくある間違い",
+};
+
+/**
+ * ExplanationPlan のみからユーザーメッセージを構築する。
+ * 盤面テキスト・SFEN・raw history は含めない。
+ */
+export function buildPlanPrompt(plan: ExplanationPlan): string {
+  const lines: string[] = [];
+
+  // 解説プラン
+  lines.push("【解説プラン】");
+  lines.push(`対象: ${plan.audience === "beginner" ? "初心者" : "中級者"}`);
+  lines.push(`焦点: ${plan.focus.map((f) => FOCUS_LABELS[f] ?? f).join("、")}`);
+  lines.push("");
+
+  // 事実
+  lines.push("【事実】");
+  for (const fact of plan.facts) {
+    lines.push(`- ${fact}`);
+  }
+  lines.push("");
+
+  // 最善手
+  lines.push("【最善手】");
+  lines.push(`${plan.bestMove.ja}: ${plan.bestMove.reason}`);
+  if (plan.bestMove.mainLine && plan.bestMove.mainLine.length > 0) {
+    lines.push(`読み筋: ${plan.bestMove.mainLine.join(" → ")}`);
+  }
+  lines.push("");
+
+  // 比較候補
+  if (plan.meaningfulAlternative) {
+    lines.push("【比較候補】");
+    lines.push(`${plan.meaningfulAlternative.ja}: ${plan.meaningfulAlternative.whyWorse}`);
+    lines.push("");
+  }
+
+  // 初心者の間違いやすい手
+  if (plan.commonMistake) {
+    lines.push("【初心者の間違いやすい手】");
+    lines.push(plan.commonMistake.ja);
+    lines.push(`なぜ指したくなるか: ${plan.commonMistake.whyTempting}`);
+    lines.push(`なぜ悪いか: ${plan.commonMistake.whyBad}`);
+    lines.push("");
+  }
+
+  // 教えるポイント
+  lines.push("【教えるポイント】");
+  lines.push(plan.teachingPoint);
+  lines.push("");
+
+  // 禁止事項
+  lines.push("【禁止事項】");
+  for (const claim of plan.forbiddenClaims) {
+    lines.push(`- ${claim}`);
+  }
+  lines.push("");
+
+  // 出力形式
+  lines.push("【出力形式】");
+  lines.push("以下の構成で解説を書いてください:");
+  lines.push("1. 一言まとめ（1文）");
+  lines.push("2. なぜこの手が良いか（2-3文）");
+  lines.push("3. なぜ比較手が劣るか（1-2文）");
+  lines.push("4. 次に同じ場面で何を見るか（1文）");
+
+  return lines.join("\n");
 }

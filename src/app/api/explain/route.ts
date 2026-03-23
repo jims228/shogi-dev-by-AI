@@ -3,14 +3,25 @@
  *
  * SFEN局面を受け取り、Gemini APIで解説を生成してストリーミングで返す。
  * history パラメータで会話コンテキストを維持する。
+ *
+ * パイプライン切り替え:
+ *   X-Pipeline: plan  → ExplanationPlan ベース（新）
+ *   X-Pipeline: legacy → 従来の buildUserMessage（旧）
+ *   デフォルト: legacy
  */
 
 import { NextRequest } from "next/server";
 import { parseSfen } from "@/lib/shogi/parser";
-import { getSystemPrompt, buildUserMessage } from "@/lib/ai/prompt";
+import {
+  getSystemPrompt,
+  buildUserMessage,
+  buildPlanPrompt,
+} from "@/lib/ai/prompt";
 import { getClient, MODEL, MAX_TOKENS } from "@/lib/ai/client";
 import type { EngineData } from "@/lib/ai/prompt";
 import type { Content } from "@google/genai";
+import { fromSfenPosition } from "@/lib/shogi/canonical";
+import { buildPlan } from "@/lib/ai/planner";
 
 interface Message {
   role: "user" | "assistant";
@@ -25,6 +36,8 @@ interface ExplainRequest {
 }
 
 export async function POST(request: NextRequest) {
+  const pipeline = request.headers.get("X-Pipeline") ?? "legacy";
+
   let body: ExplainRequest;
   try {
     body = await request.json();
@@ -53,11 +66,20 @@ export async function POST(request: NextRequest) {
   }
 
   const systemPrompt = getSystemPrompt();
-  const userMessage = buildUserMessage({
-    position: sfenPosition,
-    engineData: body.engineData,
-    question: body.question,
-  });
+
+  // Build user message based on pipeline
+  let userMessage: string;
+  if (pipeline === "plan") {
+    const canonical = fromSfenPosition(sfenPosition);
+    const plan = buildPlan(canonical, body.engineData);
+    userMessage = buildPlanPrompt(plan);
+  } else {
+    userMessage = buildUserMessage({
+      position: sfenPosition,
+      engineData: body.engineData,
+      question: body.question,
+    });
+  }
 
   // Build conversation contents from history + current message
   const contents: Content[] = [];
@@ -71,8 +93,12 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // For follow-up questions, send just the question text (context is in history)
-  const isFollowUp = body.history && body.history.length > 0 && body.question;
+  // For follow-up questions in legacy mode, send just the question text
+  const isFollowUp =
+    pipeline !== "plan" &&
+    body.history &&
+    body.history.length > 0 &&
+    body.question;
   contents.push({
     role: "user",
     parts: [{ text: isFollowUp ? body.question! : userMessage }],
