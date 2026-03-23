@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import ShogiBoard from "./ShogiBoard";
 import { parseSfen } from "@/lib/shogi/parser";
+import { generatePositions, positionToSfen } from "@/lib/shogi/move";
+import { isKifFormat, kifToUsiMoves } from "@/lib/shogi/kif";
 import type { SfenPosition } from "@/lib/shogi/types";
 
 interface ChatMessage {
@@ -12,35 +14,71 @@ interface ChatMessage {
 
 const SAMPLE_SFEN = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1";
 
+const SAMPLE_KIF = `手数----指し手---------消費時間--
+   1 ７六歩(77)        ( 0:01/00:00:01)
+   2 ３四歩(33)        ( 0:01/00:00:01)
+   3 ２六歩(27)        ( 0:01/00:00:02)`;
+
 export default function Chat() {
-  const [sfen, setSfen] = useState("");
-  const [parsedPosition, setParsedPosition] = useState<SfenPosition | null>(null);
+  const [rawInput, setRawInput] = useState("");
+  const [inputMode, setInputMode] = useState<"sfen" | "kif" | null>(null);
   const [parseError, setParseError] = useState("");
+  const [positions, setPositions] = useState<SfenPosition[]>([]);
+  const [moveIndex, setMoveIndex] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
+  const [chatInput, setChatInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [started, setStarted] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const currentPosition = useMemo(
+    () => (positions.length > 0 ? positions[moveIndex] : null),
+    [positions, moveIndex]
+  );
+
+  const currentSfen = useMemo(
+    () => (currentPosition ? positionToSfen(currentPosition) : ""),
+    [currentPosition]
+  );
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSfenChange = (value: string) => {
-    setSfen(value);
+  const handleInputChange = (value: string) => {
+    setRawInput(value);
     setParseError("");
-    try {
-      if (value.trim()) {
-        const pos = parseSfen(value.trim());
-        setParsedPosition(pos);
-      } else {
-        setParsedPosition(null);
+    setPositions([]);
+    setMoveIndex(0);
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setInputMode(null);
+      return;
+    }
+
+    if (isKifFormat(trimmed)) {
+      setInputMode("kif");
+      try {
+        const moves = kifToUsiMoves(trimmed);
+        const startPos = parseSfen(SAMPLE_SFEN.replace(/ \d+$/, " 1"));
+        const posArray = generatePositions(startPos, moves);
+        setPositions(posArray);
+        setMoveIndex(posArray.length - 1);
+      } catch (e) {
+        setParseError((e as Error).message);
       }
-    } catch (e) {
-      setParsedPosition(null);
-      setParseError((e as Error).message);
+    } else {
+      setInputMode("sfen");
+      try {
+        const pos = parseSfen(trimmed);
+        setPositions([pos]);
+        setMoveIndex(0);
+      } catch (e) {
+        setParseError((e as Error).message);
+      }
     }
   };
 
@@ -56,7 +94,6 @@ export default function Chat() {
       const controller = new AbortController();
       abortRef.current = controller;
 
-      // Add placeholder for assistant response
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       try {
@@ -74,7 +111,6 @@ export default function Chat() {
         if (!res.ok) {
           const data = await res.json().catch(() => null);
           setError(data?.error ?? `エラー (${res.status})`);
-          // Remove empty assistant message
           setMessages((prev) => prev.slice(0, -1));
           setLoading(false);
           return;
@@ -140,41 +176,45 @@ export default function Chat() {
   );
 
   const handleStart = useCallback(async () => {
-    const trimmed = sfen.trim();
-    if (!trimmed) {
-      setParseError("SFEN を入力してください");
-      return;
-    }
-
-    try {
-      parseSfen(trimmed);
-    } catch (e) {
-      setParseError((e as Error).message);
+    if (positions.length === 0) {
+      setParseError("局面を入力してください");
       return;
     }
 
     setStarted(true);
     setMessages([]);
 
+    const sfenStr = positionToSfen(positions[moveIndex]);
     const userMsg: ChatMessage = {
       role: "user",
       content: "この局面を解説してください。",
     };
     setMessages([userMsg]);
-    await streamResponse(trimmed, undefined, []);
-  }, [sfen, streamResponse]);
+    await streamResponse(sfenStr, undefined, []);
+  }, [positions, moveIndex, streamResponse]);
 
   const handleFollowUp = useCallback(async () => {
-    const trimmed = input.trim();
+    const trimmed = chatInput.trim();
     if (!trimmed || loading) return;
 
     const userMsg: ChatMessage = { role: "user", content: trimmed };
     const newHistory = [...messages, userMsg];
     setMessages(newHistory);
-    setInput("");
+    setChatInput("");
 
-    await streamResponse(sfen.trim(), trimmed, messages);
-  }, [input, loading, messages, sfen, streamResponse]);
+    await streamResponse(currentSfen, trimmed, messages);
+  }, [chatInput, loading, messages, currentSfen, streamResponse]);
+
+  const handleExplainAtMove = useCallback(async () => {
+    if (!currentSfen || loading) return;
+
+    const userMsg: ChatMessage = {
+      role: "user",
+      content: `${currentPosition?.moveNumber ?? "?"}手目の局面を解説してください。`,
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    await streamResponse(currentSfen, undefined, messages);
+  }, [currentSfen, currentPosition, loading, messages, streamResponse]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -189,17 +229,26 @@ export default function Chat() {
     setStarted(false);
     setMessages([]);
     setError("");
+    setPositions([]);
+    setMoveIndex(0);
+    setRawInput("");
+    setInputMode(null);
     abortRef.current?.abort();
   };
 
   return (
     <div className="flex flex-col h-full max-w-3xl mx-auto w-full">
-      {/* SFEN input area */}
+      {/* Input area */}
       <div className="p-4 border-b dark:border-zinc-700 flex-shrink-0">
         <div className="flex items-center gap-2 mb-2">
           <label htmlFor="sfen-input" className="text-sm font-medium">
             SFEN / KIF
           </label>
+          {inputMode && (
+            <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">
+              {inputMode === "kif" ? "KIF形式" : "SFEN形式"}
+            </span>
+          )}
           {started && (
             <button
               onClick={handleReset}
@@ -212,16 +261,16 @@ export default function Chat() {
         <div className="flex gap-2">
           <textarea
             id="sfen-input"
-            className="flex-1 h-16 p-2 border rounded-md font-mono text-sm resize-none bg-white dark:bg-zinc-900 dark:border-zinc-700"
-            placeholder={SAMPLE_SFEN}
-            value={sfen}
-            onChange={(e) => handleSfenChange(e.target.value)}
+            className="flex-1 h-20 p-2 border rounded-md font-mono text-xs resize-y bg-white dark:bg-zinc-900 dark:border-zinc-700"
+            placeholder={"SFENまたはKIF形式の棋譜を貼り付けてください\n例: " + SAMPLE_SFEN}
+            value={rawInput}
+            onChange={(e) => handleInputChange(e.target.value)}
             disabled={started}
           />
           {!started && (
             <button
               onClick={handleStart}
-              disabled={!sfen.trim() || !!parseError}
+              disabled={positions.length === 0 || !!parseError}
               className="px-4 py-2 bg-zinc-900 text-white rounded-md text-sm hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300 self-end"
             >
               解説する
@@ -231,19 +280,79 @@ export default function Chat() {
         {parseError && (
           <p className="text-xs text-red-600 dark:text-red-400 mt-1">{parseError}</p>
         )}
-        <button
-          onClick={() => handleSfenChange(SAMPLE_SFEN)}
-          className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 mt-1"
-          disabled={started}
-        >
-          サンプル局面を使う
-        </button>
+        {!started && (
+          <div className="flex gap-3 mt-1">
+            <button
+              onClick={() => handleInputChange(SAMPLE_SFEN)}
+              className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+            >
+              サンプルSFEN
+            </button>
+            <button
+              onClick={() => handleInputChange(SAMPLE_KIF)}
+              className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+            >
+              サンプルKIF
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Board display */}
-      {parsedPosition && (
+      {/* Board + navigation */}
+      {currentPosition && (
         <div className="p-4 border-b dark:border-zinc-700 flex-shrink-0 overflow-x-auto">
-          <ShogiBoard position={parsedPosition} />
+          <ShogiBoard position={currentPosition} />
+
+          {/* Move navigation (only for multi-position games) */}
+          {positions.length > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-3">
+              <button
+                onClick={() => setMoveIndex(0)}
+                disabled={moveIndex === 0}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-30 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:border-zinc-600"
+              >
+                |◀
+              </button>
+              <button
+                onClick={() => setMoveIndex(Math.max(0, moveIndex - 1))}
+                disabled={moveIndex === 0}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-30 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:border-zinc-600"
+              >
+                ◀
+              </button>
+              <span className="text-sm text-zinc-600 dark:text-zinc-400 min-w-[8rem] text-center">
+                {moveIndex === 0
+                  ? "開始局面"
+                  : `${moveIndex}手目`}{" "}
+                / 全{positions.length - 1}手
+              </span>
+              <button
+                onClick={() =>
+                  setMoveIndex(Math.min(positions.length - 1, moveIndex + 1))
+                }
+                disabled={moveIndex === positions.length - 1}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-30 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:border-zinc-600"
+              >
+                ▶
+              </button>
+              <button
+                onClick={() => setMoveIndex(positions.length - 1)}
+                disabled={moveIndex === positions.length - 1}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-30 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:border-zinc-600"
+              >
+                ▶|
+              </button>
+              {started && (
+                <button
+                  onClick={handleExplainAtMove}
+                  disabled={loading}
+                  className="px-2 py-1 text-xs border rounded text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:border-zinc-600 disabled:opacity-50"
+                >
+                  この局面を解説
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -281,14 +390,14 @@ export default function Chat() {
               type="text"
               className="flex-1 p-2 border rounded-md text-sm bg-white dark:bg-zinc-900 dark:border-zinc-700"
               placeholder="追加の質問を入力..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={loading}
             />
             <button
               onClick={handleFollowUp}
-              disabled={loading || !input.trim()}
+              disabled={loading || !chatInput.trim()}
               className="px-4 py-2 bg-zinc-900 text-white rounded-md text-sm hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
             >
               {loading ? "..." : "送信"}
