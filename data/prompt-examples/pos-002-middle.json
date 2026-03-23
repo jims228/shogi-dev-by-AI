@@ -12,11 +12,40 @@
     "eval": 516,
     "eval_type": "cp",
     "candidates": [
-      { "move": "P*2d", "eval": 516, "move_ja": "▲2四歩打", "description": "2筋に歩を打って突破を狙う。飛車と連携した攻め" },
-      { "move": "B*7a", "eval": 510, "move_ja": "▲7一角打", "description": "相手陣の奥に角を打ち込み、飛車を狙う。大胆な攻め" },
-      { "move": "B*6d", "eval": 170, "move_ja": "▲6四角打", "description": "中央に角を打つ。悪手ではないが、相手に対応されやすい" }
+      {
+        "move": "P*2d",
+        "eval": 516,
+        "move_ja": "▲2四歩打",
+        "description": "2筋に歩を打って突破を狙う。飛車と連携した攻め"
+      },
+      {
+        "move": "B*7a",
+        "eval": 510,
+        "move_ja": "▲7一角打",
+        "description": "相手陣の奥に角を打ち込み、飛車を狙う。大胆な攻め"
+      },
+      {
+        "move": "B*6d",
+        "eval": 170,
+        "move_ja": "▲6四角打",
+        "description": "中央に角を打つ。悪手ではないが、相手に対応されやすい"
+      }
     ],
-    "pv": ["P*2d", "2c2d", "B*7a", "8b5b", "S*6c", "5b9b", "2h2d", "P*2c", "2d8d", "B*2g", "N*3f", "8a7c", "P*2d"],
+    "pv": [
+      "P*2d",
+      "2c2d",
+      "B*7a",
+      "8b5b",
+      "S*6c",
+      "5b9b",
+      "2h2d",
+      "P*2c",
+      "2d8d",
+      "B*2g",
+      "N*3f",
+      "8a7c",
+      "P*2d"
+    ],
     "depth": 16,
     "engine": "YaneuraOu NNUE 9.10"
   },
@@ -36,5 +65,9 @@
   "common_mistake": "▲6四角打のように中途半端な位置に角を打つと、相手に角を働かせる余裕を与えてしまう",
   "learning_point": "持ち駒の角や歩は、打つ位置で攻めの効果が大きく変わる。直接相手の弱点を突く手（2四歩打）か、相手陣を乱す手（7一角打）を考えること",
   "verification_status": "engine_verified_position_constructed",
-  "verification_note": "YaneuraOu NNUE 9.10, depth 16, 4.76M nodes. SFENは手動構築した局面（実戦からの引用ではない）。エンジンは正常に解析したため局面は合法と判断されるが、自然な棋譜の流れから生じた局面ではない点に注意。reviewer は盤面の駒配置を目視検証すべき"
+  "verification_note": "YaneuraOu NNUE 9.10, depth 16, 4.76M nodes. SFENは手動構築した局面（実戦からの引用ではない）。エンジンは正常に解析したため局面は合法と判断されるが、自然な棋譜の流れから生じた局面ではない点に注意。reviewer は盤面の駒配置を目視検証すべき",
+  "king_positions": {
+    "sente": "8八",
+    "gote": "2二"
+  }
 }

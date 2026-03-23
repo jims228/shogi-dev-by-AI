@@ -12,11 +12,39 @@
     "eval": 127,
     "eval_type": "cp",
     "candidates": [
-      { "move": "6i7h", "eval": 127, "move_ja": "▲7八金", "description": "左金を7八に上がる。角頭を守りつつ、玉の囲い入りを準備する手" },
-      { "move": "2g2f", "eval": 103, "move_ja": "▲2六歩", "description": "飛車先の歩を突く。2筋から攻める意思表示で、居飛車の基本手" },
-      { "move": "3i3h", "eval": 43, "move_ja": "▲3八銀", "description": "右銀を3八に展開。堅実だが、方針決定がやや遅れる" }
+      {
+        "move": "6i7h",
+        "eval": 127,
+        "move_ja": "▲7八金",
+        "description": "左金を7八に上がる。角頭を守りつつ、玉の囲い入りを準備する手"
+      },
+      {
+        "move": "2g2f",
+        "eval": 103,
+        "move_ja": "▲2六歩",
+        "description": "飛車先の歩を突く。2筋から攻める意思表示で、居飛車の基本手"
+      },
+      {
+        "move": "3i3h",
+        "eval": 43,
+        "move_ja": "▲3八銀",
+        "description": "右銀を3八に展開。堅実だが、方針決定がやや遅れる"
+      }
     ],
-    "pv": ["6i7h", "8c8d", "2g2f", "8d8e", "2f2e", "4a3b", "2e2d", "2c2d", "2h2d", "8e8f", "8g8f", "8b8f"],
+    "pv": [
+      "6i7h",
+      "8c8d",
+      "2g2f",
+      "8d8e",
+      "2f2e",
+      "4a3b",
+      "2e2d",
+      "2c2d",
+      "2h2d",
+      "8e8f",
+      "8g8f",
+      "8b8f"
+    ],
     "depth": 19,
     "engine": "YaneuraOu NNUE 9.10"
   },
@@ -37,5 +65,9 @@
   "common_mistake": "いきなり▲2四歩と飛車先の歩を突っかけるのは、相手に△同歩と取られた後の展開が難しい（まだ飛車先を突く準備ができていない）",
   "learning_point": "序盤は一手ごとに戦型の方向性が決まる。どの手を選ぶかは良し悪しではなく、自分がどんな将棋を指したいかで決まる",
   "verification_status": "engine_verified",
-  "verification_note": "YaneuraOu NNUE 9.10, depth 19, 3.58M nodes. SFENは初期局面から▲7六歩△3四歩の2手を手動でトレースして構築。駒配置を手動検証済み"
+  "verification_note": "YaneuraOu NNUE 9.10, depth 19, 3.58M nodes. SFENは初期局面から▲7六歩△3四歩の2手を手動でトレースして構築。駒配置を手動検証済み",
+  "king_positions": {
+    "sente": "5九",
+    "gote": "5一"
+  }
 }
