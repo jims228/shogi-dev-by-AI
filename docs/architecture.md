@@ -113,7 +113,7 @@ v2: KIF → 特徴抽出(8次元) → ML予測 → プロンプト構築 → LLM
    ユーザーの質問 + 局面構造化データ + 会話履歴 → プロンプトへ
 
 4. 解説生成
-   システムプロンプト + コンテキスト → Claude API → ストリーミング出力
+   システムプロンプト + コンテキスト → Gemini API → ストリーミング出力
 
 5. 後処理（Should）
    専門用語に注釈を付加
@@ -272,7 +272,7 @@ shogi-dev-by-AI/
 │   │   │   └── types.ts             # 将棋関連の型定義
 │   │   ├── ai/
 │   │   │   ├── prompt.ts            # システムプロンプト
-│   │   │   └── client.ts            # Claude API クライアント
+│   │   │   └── client.ts            # Gemini API クライアント
 │   │   └── glossary.ts              # 用語注釈
 │   └── components/
 │       ├── Chat.tsx                  # チャットコンポーネント

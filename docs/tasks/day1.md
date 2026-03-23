@@ -65,7 +65,7 @@ Day 2でUI・対話・デプロイ・品質ゲートに進むための土台。
 ### TASK-005: 解説API（POST /api/explain）を実装
 - **担当**: builder
 - **依存**: TASK-003, TASK-004
-- **完了条件**: SFEN/KIF入力 → Claude API呼び出し → ストリーミングで解説テキストを返すAPIルート
+- **完了条件**: SFEN/KIF入力 → Gemini API呼び出し → ストリーミングで解説テキストを返すAPIルート
 - **PR**: `feat/explain-api` → main（TASK-003, 004とまとめてもOK）
 
 ### TASK-006: 3局面でプロンプトv1を検証（参考値）
