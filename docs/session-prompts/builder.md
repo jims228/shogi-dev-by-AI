@@ -29,7 +29,7 @@ feat/* ブランチでworktreeを使って作業する。
 
 ## 技術スタック
 - Next.js 15 (App Router) + TypeScript + Tailwind CSS
-- Claude API (Anthropic SDK, streaming)
+- Gemini API (@google/genai, streaming)
 - JSON静的ファイル（DB不要）
 - Vercelデプロイ
 
