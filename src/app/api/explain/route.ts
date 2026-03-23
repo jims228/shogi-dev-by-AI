@@ -5,9 +5,8 @@
  * history パラメータで会話コンテキストを維持する。
  *
  * パイプライン切り替え:
- *   X-Pipeline: plan  → ExplanationPlan ベース（新）
- *   X-Pipeline: legacy → 従来の buildUserMessage（旧）
- *   デフォルト: legacy
+ *   X-Pipeline: plan   → ExplanationPlan ベース（デフォルト）
+ *   X-Pipeline: legacy → 従来の buildUserMessage
  */
 
 import { NextRequest } from "next/server";
@@ -19,9 +18,11 @@ import {
 } from "@/lib/ai/prompt";
 import { getClient, MODEL, MAX_TOKENS } from "@/lib/ai/client";
 import type { EngineData } from "@/lib/ai/prompt";
+import type { ExplanationPlan } from "@/lib/ai/plan";
 import type { Content } from "@google/genai";
 import { fromSfenPosition } from "@/lib/shogi/canonical";
 import { buildPlan } from "@/lib/ai/planner";
+import { verifyExplanation } from "@/lib/ai/verifier";
 
 interface Message {
   role: "user" | "assistant";
@@ -36,7 +37,7 @@ interface ExplainRequest {
 }
 
 export async function POST(request: NextRequest) {
-  const pipeline = request.headers.get("X-Pipeline") ?? "legacy";
+  const pipeline = request.headers.get("X-Pipeline") ?? "plan";
 
   let body: ExplainRequest;
   try {
@@ -67,11 +68,13 @@ export async function POST(request: NextRequest) {
 
   const systemPrompt = getSystemPrompt();
 
-  // Build user message based on pipeline
+  // Build user message and plan based on pipeline
   let userMessage: string;
+  let plan: ExplanationPlan | null = null;
+
   if (pipeline === "plan") {
     const canonical = fromSfenPosition(sfenPosition);
-    const plan = buildPlan(canonical, body.engineData);
+    plan = buildPlan(canonical, body.engineData);
     userMessage = buildPlanPrompt(plan);
   } else {
     userMessage = buildUserMessage({
@@ -118,10 +121,12 @@ export async function POST(request: NextRequest) {
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {
+        let fullOutput = "";
         try {
           for await (const chunk of stream) {
             const text = chunk.text;
             if (text) {
+              fullOutput += text;
               const data = JSON.stringify({
                 type: "text",
                 content: text,
@@ -131,6 +136,20 @@ export async function POST(request: NextRequest) {
               );
             }
           }
+
+          // Run verifier for plan pipeline
+          if (plan) {
+            const verifyResult = verifyExplanation(fullOutput, plan);
+            const verifyData = JSON.stringify({
+              type: "verify",
+              passed: verifyResult.passed,
+              issues: verifyResult.issues,
+            });
+            controller.enqueue(
+              encoder.encode(`data: ${verifyData}\n\n`)
+            );
+          }
+
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         } catch (err) {
