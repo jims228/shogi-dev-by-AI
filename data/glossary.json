@@ -1,0 +1,177 @@
+[
+  {
+    "term": "王将",
+    "reading": "おうしょう",
+    "aliases": ["玉将", "玉", "王"],
+    "explanation": "将棋で最も大切な駒。この駒を取られると負け（詰み）。全方向に1マス動ける",
+    "category": "piece"
+  },
+  {
+    "term": "飛車",
+    "reading": "ひしゃ",
+    "aliases": ["飛"],
+    "explanation": "縦と横にどこまでも動ける強力な駒。攻めの要。成ると「龍」になる",
+    "category": "piece"
+  },
+  {
+    "term": "角行",
+    "reading": "かくぎょう",
+    "aliases": ["角"],
+    "explanation": "斜めにどこまでも動ける駒。飛車と並ぶ大駒。成ると「馬」になる",
+    "category": "piece"
+  },
+  {
+    "term": "金将",
+    "reading": "きんしょう",
+    "aliases": ["金"],
+    "explanation": "前・左右・斜め前・後ろの6方向に1マス動ける。玉の守りに使われることが多い。成れない",
+    "category": "piece"
+  },
+  {
+    "term": "銀将",
+    "reading": "ぎんしょう",
+    "aliases": ["銀"],
+    "explanation": "前と斜め4方向の5方向に1マス動ける。横と後ろには動けない。攻めにも守りにも使える",
+    "category": "piece"
+  },
+  {
+    "term": "桂馬",
+    "reading": "けいま",
+    "aliases": ["桂"],
+    "explanation": "前方に「L字型」に跳ぶ特殊な駒。他の駒を飛び越えられる唯一の駒。横や後ろには動けない",
+    "category": "piece"
+  },
+  {
+    "term": "香車",
+    "reading": "きょうしゃ",
+    "aliases": ["香"],
+    "explanation": "前にどこまでもまっすぐ進める駒。ただし横や後ろには動けない。端（1筋や9筋）で活躍しやすい",
+    "category": "piece"
+  },
+  {
+    "term": "歩兵",
+    "reading": "ふひょう",
+    "aliases": ["歩"],
+    "explanation": "前に1マスだけ進める最も基本的な駒。各自9枚ずつ持つ。成ると「と金」になり金と同じ動きになる",
+    "category": "piece"
+  },
+  {
+    "term": "龍王",
+    "reading": "りゅうおう",
+    "aliases": ["龍", "竜", "成飛車"],
+    "explanation": "飛車が敵陣に入って成った駒。飛車の動き（縦横）に加えて斜め1マスにも動ける。最強クラスの駒",
+    "category": "piece"
+  },
+  {
+    "term": "龍馬",
+    "reading": "りゅうま",
+    "aliases": ["馬", "成角"],
+    "explanation": "角が敵陣に入って成った駒。角の動き（斜め）に加えて縦横1マスにも動ける。非常に強力",
+    "category": "piece"
+  },
+  {
+    "term": "王手",
+    "reading": "おうて",
+    "aliases": [],
+    "explanation": "相手の玉を直接攻撃している状態。王手をかけられた側は、必ず次の一手で王手を解除しなければならない",
+    "category": "basic"
+  },
+  {
+    "term": "詰み",
+    "reading": "つみ",
+    "aliases": [],
+    "explanation": "王手がかかっていて、どう動いても王手を解除できない状態。詰みになったら負け",
+    "category": "basic"
+  },
+  {
+    "term": "成り",
+    "reading": "なり",
+    "aliases": ["成る"],
+    "explanation": "駒が敵陣（相手側の3段）に入ったとき、裏返してパワーアップすること。歩が成ると「と金」、銀が成ると金と同じ動きになる",
+    "category": "basic"
+  },
+  {
+    "term": "打つ",
+    "reading": "うつ",
+    "aliases": ["駒を打つ"],
+    "explanation": "持ち駒（取った駒）を盤上の空いているマスに置くこと。将棋の大きな特徴で、取った駒を再利用できる",
+    "category": "basic"
+  },
+  {
+    "term": "先手",
+    "reading": "せんて",
+    "aliases": [],
+    "explanation": "先に指す側。棋譜では▲（黒い三角）で表す。わずかに有利とされる",
+    "category": "basic"
+  },
+  {
+    "term": "後手",
+    "reading": "ごて",
+    "aliases": [],
+    "explanation": "後に指す側。棋譜では△（白い三角）で表す",
+    "category": "basic"
+  },
+  {
+    "term": "手番",
+    "reading": "てばん",
+    "aliases": [],
+    "explanation": "今どちらが指す番かということ。将棋では交互に1手ずつ指す",
+    "category": "basic"
+  },
+  {
+    "term": "持ち駒",
+    "reading": "もちごま",
+    "aliases": ["手駒"],
+    "explanation": "相手から取った駒のこと。自分の番に盤上の空きマスに打つ（置く）ことができる",
+    "category": "basic"
+  },
+  {
+    "term": "評価値",
+    "reading": "ひょうかち",
+    "aliases": [],
+    "explanation": "コンピュータが計算した局面の有利・不利の数値。プラスなら先手有利、マイナスなら後手有利。例: +300は先手がやや有利",
+    "category": "basic"
+  },
+  {
+    "term": "手筋",
+    "reading": "てすじ",
+    "aliases": [],
+    "explanation": "特定の場面で効果的な定番の指し方。「割り打ちの銀」「田楽刺し」など名前がついているものもある",
+    "category": "basic"
+  },
+  {
+    "term": "居飛車",
+    "reading": "いびしゃ",
+    "aliases": [],
+    "explanation": "飛車を最初の位置（2筋）のまま使う戦法の総称。飛車先の歩を突いて攻めるのが基本",
+    "category": "strategy"
+  },
+  {
+    "term": "振り飛車",
+    "reading": "ふりびしゃ",
+    "aliases": [],
+    "explanation": "飛車を左側（5筋〜9筋）に動かして使う戦法の総称。中飛車・四間飛車・三間飛車・向かい飛車などがある",
+    "category": "strategy"
+  },
+  {
+    "term": "囲い",
+    "reading": "かこい",
+    "aliases": [],
+    "explanation": "玉の周りに金銀を配置して守りを固めること。矢倉囲い、美濃囲いなど種類がある",
+    "category": "strategy"
+  },
+  {
+    "term": "矢倉",
+    "reading": "やぐら",
+    "aliases": ["矢倉囲い"],
+    "explanation": "金銀3枚で玉を上部から守る囲い。上からの攻めに強いが、横からの攻めにはやや弱い",
+    "category": "castle"
+  },
+  {
+    "term": "美濃囲い",
+    "reading": "みのがこい",
+    "aliases": ["美濃"],
+    "explanation": "振り飛車でよく使われる囲い。玉を端に寄せ、金銀で横から守る。横からの攻めに強い",
+    "category": "castle"
+  }
+]
