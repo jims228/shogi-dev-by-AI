@@ -37,7 +37,7 @@ export function verifyExplanation(
   checkBestMoveMentioned(output, plan, issues);
 
   // 4. facts 外の座標言及チェック
-  checkUnknownCoordinates(output, plan.facts, issues);
+  checkUnknownCoordinates(output, plan.facts, plan.forbiddenClaims, issues);
 
   // 5. 出力の切断チェック
   if (isTruncated(output)) {
@@ -142,12 +142,22 @@ function checkBestMoveMentioned(
 function checkUnknownCoordinates(
   output: string,
   facts: string[],
+  forbiddenClaims: string[],
   issues: string[]
 ): void {
   // facts から座標を抽出
   const knownCoords = new Set<string>();
   for (const fact of facts) {
     const matches = fact.match(COORDINATE_PATTERN);
+    if (matches) {
+      for (const m of matches) {
+        knownCoords.add(m);
+      }
+    }
+  }
+  // forbiddenClaims からも座標を抽出
+  for (const claim of forbiddenClaims) {
+    const matches = claim.match(COORDINATE_PATTERN);
     if (matches) {
       for (const m of matches) {
         knownCoords.add(m);
