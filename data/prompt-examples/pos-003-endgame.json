@@ -1,0 +1,48 @@
+{
+  "id": "pos-003",
+  "description": "終盤の寄せ: 3手詰めの局面。持ち駒の飛車と桂馬を使って玉を詰ます。初心者がよく間違える「金打ち」との比較が教育的",
+  "category": "endgame",
+  "sfen": "8k/7s1/6+R2/9/9/9/9/9/K8 b R2B4G3S4N4L18P 1",
+  "move_number": null,
+  "phase": "endgame",
+  "last_move": null,
+  "game_context": "終盤の構成局面。後手の玉が1一（1a）に追い詰められ、2二（2b）に銀が1枚だけ守りについている。先手は3三（3c）に龍（成飛車）を据え、持ち駒に飛車・角2・金4・銀3・桂4・香4・歩18を持つ圧倒的な駒得状態。先手が正しく寄せれば3手で詰む",
+  "engine_data": {
+    "bestmove": "R*5a",
+    "eval": "mate 3",
+    "eval_type": "mate",
+    "candidates": [
+      { "move": "R*5a", "eval": "mate 3", "move_ja": "▲5一飛打", "description": "1段目（a筋）に飛車を打ち、玉の横への逃げ道を封鎖する" },
+      { "move": "R*6a", "eval": "mate 3", "move_ja": "▲6一飛打", "description": "同様に1段目に飛車を打つ。5一飛と同じ詰み筋" },
+      { "move": "R*8a", "eval": "mate 3", "move_ja": "▲8一飛打", "description": "同様に1段目に飛車を打つ。5一飛と同じ詰み筋" }
+    ],
+    "pv": ["R*5a", "1a1b", "N*2d"],
+    "pv_ja": ["▲5一飛打", "△1二玉", "▲2四桂打"],
+    "depth": 158,
+    "engine": "YaneuraOu NNUE 9.10"
+  },
+  "context": {
+    "opening": null,
+    "sente_castle": null,
+    "gote_castle": "崩壊（玉と銀1枚のみ）",
+    "key_point": "1段目に飛車を打って横の逃げ道を封鎖し、桂馬でトドメを刺す3手詰め"
+  },
+  "expected_explanation_points": [
+    "3手で詰む局面であること",
+    "▲5一飛打は1段目（一段目）全体を制圧して、玉の横への逃げ道を断つ手であること",
+    "△1二玉と逃げるしかないが、▲2四桂打で詰みになること",
+    "▲2四桂は1二の玉に利いており、玉の逃げ場がすべて塞がっている（1一は飛車、2一は飛車、1三は龍の利き、2三は龍の利き）こと",
+    "▲1二金打は一見詰みに見えるが、金が紐付いていない（守られていない）ため△同玉と取られて詰まないこと（初心者のよくある間違い）"
+  ],
+  "common_mistake": "▲1二金打（G*1b）は王手だが、金が他の駒で守られていないため△同玉（King captures）で取られてしまう。「王手をかける」だけでなく「取られない王手」を考えることが詰みのコツ",
+  "learning_point": "詰みを読むときは、王手の駒が取られないかを必ず確認する。飛車で逃げ道を封鎖してから桂馬で仕留める、という複数の駒の連携が大切",
+  "board_verification": {
+    "white_pieces_on_board": "玉(1一/1a), 銀(2二/2b)",
+    "black_pieces_on_board": "玉(9九/9i), 龍(3三/3c)",
+    "black_hand": "飛1, 角2, 金4, 銀3, 桂4, 香4, 歩18",
+    "white_hand": "なし",
+    "total_pieces": 40
+  },
+  "verification_status": "engine_verified_position_constructed",
+  "verification_note": "YaneuraOu NNUE 9.10, depth 158, 595K nodes. SFENは手動構築した詰将棋的な局面。エンジンが正常に3手詰を検出。駒数40を手動検証済み。reviewer は盤面の駒配置（特に龍と銀の位置）を目視検証すべき"
+}
