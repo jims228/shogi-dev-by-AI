@@ -12,6 +12,9 @@ import { estimatePhase } from "../shogi/parser";
 import type { EngineData, EngineCandidate } from "./prompt";
 import type { ExplanationPlan, FocusCategory } from "./plan";
 import { kingSafety, materialBalance, attackMap } from "../shogi/features";
+import { isLegalMove } from "../shogi/legality";
+import { parseSfen } from "../shogi/parser";
+import { positionToSfen } from "../shogi/move";
 
 /**
  * 評価値を初心者向けの日本語表現に変換する
@@ -112,7 +115,16 @@ export function buildPlan(
     ? `以下の検証ポイントに矛盾がないか確認してください: ${ext.verification_note}`
     : undefined;
 
-  // --- 8. confidence ---
+  // --- 8. Legality gate ---
+  const sfenPos = toSfenPosition(position);
+  const checkedBestMove = (!bestMove.usi || isLegalMove(sfenPos, bestMove.usi))
+    ? bestMove
+    : { ...bestMove, usi: "", reason: "（合法性未確認のため手順省略）" };
+  const checkedAlt = (!alt || !alt.usi || isLegalMove(sfenPos, alt.usi))
+    ? alt
+    : undefined;
+
+  // --- 9. confidence ---
   const confidence: "high" | "medium" | "low" = engineData
     ? engineData.candidates.length >= 3
       ? "high"
@@ -123,8 +135,8 @@ export function buildPlan(
     audience: "beginner",
     focus,
     facts,
-    bestMove,
-    meaningfulAlternative: alt,
+    bestMove: checkedBestMove,
+    meaningfulAlternative: checkedAlt,
     commonMistake,
     teachingPoint,
     forbiddenClaims: forbidden,
@@ -325,4 +337,18 @@ function findKings(board: Board): { sente: string | null; gote: string | null } 
   }
 
   return { sente, gote };
+}
+
+// --- CanonicalPosition → SfenPosition ---
+
+import type { SfenPosition } from "../shogi/types";
+
+function toSfenPosition(position: CanonicalPosition): SfenPosition {
+  return {
+    board: position.board,
+    turn: position.turn,
+    senteHand: position.hands.sente,
+    goteHand: position.hands.gote,
+    moveNumber: position.moveNumber,
+  };
 }

@@ -112,4 +112,28 @@ describe("buildPlan", () => {
     expect(plan.bestMove.reason).toContain("エンジンデータがありません");
     expect(plan.facts.length).toBeGreaterThan(3);
   });
+
+  it("不合法手を含むエンジンデータ → planからその手が除外される", () => {
+    // 初期局面に対して存在しない手をbestmoveに指定
+    const pos = parseSfen(
+      "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"
+    );
+    const canonical = fromSfenPosition(pos);
+    const fakeEngineData = {
+      bestmove: "9a1i",  // 不合法な手
+      bestmove_ja: "▲不合法",
+      eval: 500,
+      candidates: [
+        { move: "9a1i", move_ja: "▲不合法", eval: 500 },
+        { move: "7g7f", move_ja: "▲7六歩", eval: 100 },
+      ],
+    };
+    const plan = buildPlan(canonical, fakeEngineData);
+
+    // bestMove のUSIが空になっている（不合法手が除外された）
+    expect(plan.bestMove.usi).toBe("");
+    expect(plan.bestMove.reason).toContain("合法性未確認");
+    // 合法な代替手は残る
+    expect(plan.meaningfulAlternative?.usi).toBe("7g7f");
+  });
 });

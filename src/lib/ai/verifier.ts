@@ -39,6 +39,11 @@ export function verifyExplanation(
   // 4. facts 外の座標言及チェック
   checkUnknownCoordinates(output, plan.facts, issues);
 
+  // 5. 出力の切断チェック
+  if (isTruncated(output)) {
+    issues.push("出力が途中で切れています");
+  }
+
   return {
     passed: issues.length === 0,
     issues,
@@ -169,4 +174,30 @@ function checkUnknownCoordinates(
       `plan.factsにない座標への言及: ${[...unknownCoords].join(", ")}`
     );
   }
+}
+
+// ============================================================
+// Truncation guard
+// ============================================================
+
+/**
+ * 出力が途中で切れていないかチェックする
+ */
+export function isTruncated(output: string): boolean {
+  const trimmed = output.trim();
+
+  // 明らかに短すぎる
+  if (trimmed.length < 50) return true;
+
+  // 閉じていない括弧
+  const openParens = (trimmed.match(/[（「『【]/g) || []).length;
+  const closeParens = (trimmed.match(/[）」』】]/g) || []).length;
+  if (openParens > closeParens) return true;
+
+  // 句点で終わっていない（最後の文字が。でない場合）
+  const lastChar = trimmed[trimmed.length - 1];
+  const endsWithTerminator = lastChar === "。" || lastChar === "」" || lastChar === "）" || lastChar === "！" || lastChar === "？" || lastChar === "】";
+  if (!endsWithTerminator) return true;
+
+  return false;
 }

@@ -86,4 +86,29 @@ describe("verifyExplanation", () => {
     // +3 は50未満なので検出されない
     expect(result.issues.some((i) => i.includes("評価値の数字"))).toBe(false);
   });
+
+  it("途切れた出力（句点なし）→ issues に truncation", () => {
+    const output =
+      "▲7八金が最善手です。角頭を守りながら囲いの準備ができますが、もし代わりに";
+
+    const result = verifyExplanation(output, basePlan);
+    expect(result.passed).toBe(false);
+    expect(result.issues.some((i) => i.includes("途中で切れ"))).toBe(true);
+  });
+
+  it("短すぎる出力 → issues に truncation", () => {
+    const output = "7八金が最善手。";
+
+    const result = verifyExplanation(output, basePlan);
+    expect(result.passed).toBe(false);
+    expect(result.issues.some((i) => i.includes("途中で切れ"))).toBe(true);
+  });
+
+  it("正常な出力（句点で終わる）→ truncation なし", () => {
+    const output =
+      "▲7八金が最善手です。角頭を守りながら囲いの準備ができます。▲2六歩も有力ですが、守りが遅れるため7八金が優ります。序盤は攻守のバランスが大切です。";
+
+    const result = verifyExplanation(output, basePlan);
+    expect(result.issues.some((i) => i.includes("途中で切れ"))).toBe(false);
+  });
 });
