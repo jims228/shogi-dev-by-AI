@@ -1,0 +1,40 @@
+{
+  "id": "pos-001",
+  "description": "序盤の方針選択: 角道を開け合った直後（▲7六歩 △3四歩 の後）。先手が次に何を指すかで戦型が決まる分岐点",
+  "category": "opening",
+  "sfen": "lnsgkgsnl/1r5b1/pppppp1pp/6p2/9/2P6/PP1PPPPPP/1B5R1/LNSGKGSNL b - 3",
+  "move_number": 3,
+  "phase": "opening",
+  "last_move": "3c3d",
+  "game_context": "▲7六歩 △3四歩 の2手のみ進んだ状態。両者が角道を開けた最序盤の最も基本的な分岐点。先手の次の一手で居飛車か振り飛車かなど、戦型の方向性が決まる",
+  "engine_data": {
+    "bestmove": "6i7h",
+    "eval": 127,
+    "eval_type": "cp",
+    "candidates": [
+      { "move": "6i7h", "eval": 127, "move_ja": "▲7八金", "description": "左金を7八に上がる。角頭を守りつつ、玉の囲い入りを準備する手" },
+      { "move": "2g2f", "eval": 103, "move_ja": "▲2六歩", "description": "飛車先の歩を突く。2筋から攻める意思表示で、居飛車の基本手" },
+      { "move": "3i3h", "eval": 43, "move_ja": "▲3八銀", "description": "右銀を3八に展開。堅実だが、方針決定がやや遅れる" }
+    ],
+    "pv": ["6i7h", "8c8d", "2g2f", "8d8e", "2f2e", "4a3b", "2e2d", "2c2d", "2h2d", "8e8f", "8g8f", "8b8f"],
+    "depth": 19,
+    "engine": "YaneuraOu NNUE 9.10"
+  },
+  "context": {
+    "opening": "相掛かり / 角道オープン型",
+    "sente_castle": "未着手",
+    "gote_castle": "未着手",
+    "key_point": "先手の戦型選択。▲7八金は矢倉や角換わりへ、▲2六歩は相掛かりへの入口"
+  },
+  "expected_explanation_points": [
+    "この局面は序盤の最初の分岐点であること",
+    "▲7八金は金を守りに使いつつ、玉を囲う準備をする意味があること",
+    "▲2六歩は飛車先の歩を伸ばして攻めの準備をする意味があること",
+    "評価値に大差はなく、どれも悪手ではないが、方針が異なること",
+    "初心者への補足: 序盤は駒を攻めの位置に動かす（展開する）段階であること"
+  ],
+  "common_mistake": "いきなり▲2四歩と飛車先の歩を突っかけるのは、相手に△同歩と取られた後の展開が難しい（まだ飛車先を突く準備ができていない）",
+  "learning_point": "序盤は一手ごとに戦型の方向性が決まる。どの手を選ぶかは良し悪しではなく、自分がどんな将棋を指したいかで決まる",
+  "verification_status": "engine_verified",
+  "verification_note": "YaneuraOu NNUE 9.10, depth 19, 3.58M nodes. SFENは初期局面から▲7六歩△3四歩の2手を手動でトレースして構築。駒配置を手動検証済み"
+}
