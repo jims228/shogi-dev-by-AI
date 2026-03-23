@@ -2,6 +2,7 @@
  * POST /api/explain
  *
  * SFEN局面を受け取り、Gemini APIで解説を生成してストリーミングで返す。
+ * history パラメータで会話コンテキストを維持する。
  */
 
 import { NextRequest } from "next/server";
@@ -9,11 +10,18 @@ import { parseSfen } from "@/lib/shogi/parser";
 import { getSystemPrompt, buildUserMessage } from "@/lib/ai/prompt";
 import { getClient, MODEL, MAX_TOKENS } from "@/lib/ai/client";
 import type { EngineData } from "@/lib/ai/prompt";
+import type { Content } from "@google/genai";
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
 
 interface ExplainRequest {
   position: string;
   question?: string;
   engineData?: EngineData;
+  history?: Message[];
 }
 
 export async function POST(request: NextRequest) {
@@ -51,6 +59,25 @@ export async function POST(request: NextRequest) {
     question: body.question,
   });
 
+  // Build conversation contents from history + current message
+  const contents: Content[] = [];
+
+  if (body.history && body.history.length > 0) {
+    for (const msg of body.history) {
+      contents.push({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [{ text: msg.content }],
+      });
+    }
+  }
+
+  // For follow-up questions, send just the question text (context is in history)
+  const isFollowUp = body.history && body.history.length > 0 && body.question;
+  contents.push({
+    role: "user",
+    parts: [{ text: isFollowUp ? body.question! : userMessage }],
+  });
+
   try {
     const client = getClient();
     const stream = await client.models.generateContentStream({
@@ -59,7 +86,7 @@ export async function POST(request: NextRequest) {
         maxOutputTokens: MAX_TOKENS,
         systemInstruction: systemPrompt,
       },
-      contents: [{ role: "user", parts: [{ text: userMessage }] }],
+      contents,
     });
 
     const encoder = new TextEncoder();
