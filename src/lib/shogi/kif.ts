@@ -4,6 +4,8 @@
  * KIF形式（長形式）をUSI指し手リストに変換する。
  * 「同」記法、駒打ち（"３三歩打"）、成り（"成"/"不成"）に対応。
  *
+ * v2 (shogi-commentary-ai-v2) の convertKif.ts を参考に実装。
+ *
  * KIF形式の例:
  *   1 ７六歩(77)        ( 0:01/00:00:01)
  *   2 ３四歩(34)        ( 0:01/00:00:01)
@@ -32,6 +34,7 @@ const NUM_TO_RANK: Record<string, string> = {
 const PIECE_TO_USI: Record<string, string> = {
   "歩": "P", "香": "L", "桂": "N", "銀": "S", "金": "G",
   "角": "B", "飛": "R", "玉": "K", "王": "K",
+  "と": "P", "成香": "L", "成桂": "N", "成銀": "S", "馬": "B", "龍": "R", "竜": "R",
 };
 
 /**
@@ -39,9 +42,7 @@ const PIECE_TO_USI: Record<string, string> = {
  */
 function normalize(src: string): string {
   let s = src.normalize("NFKC");
-  // 全角数字を半角に
   s = s.replace(/[０-９]/g, (ch) => ZEN_TO_HAN[ch] ?? ch);
-  // CR除去
   s = s.replace(/\r/g, "");
   return s;
 }
@@ -58,11 +59,12 @@ function toHalfNum(ch: string): string {
  */
 export function isKifFormat(text: string): boolean {
   const normalized = normalize(text);
-  // KIF形式の特徴的なパターン
   if (/手数.*指し?手/.test(normalized)) return true;
   if (/^\s*\d+\s+[1-9一二三四五六七八九]/.test(normalized)) return true;
   if (/[▲△]\s*[1-9一二三四五六七八九]/.test(normalized)) return true;
   if (/^\s*\d+\s+同/.test(normalized)) return true;
+  // ヘッダー行（先手：、後手：、手合割：等）がある場合もKIF
+  if (/^(先手|後手|手合割)[：:]/.test(normalized)) return true;
   return false;
 }
 
@@ -82,9 +84,11 @@ export function kifToUsiMoves(kif: string): string[] {
   const moves: string[] = [];
   let lastTo: string | null = null;
   let inMoveSection = false;
+  let moveCount = 0; // track which move we're on for sente/gote
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
+    if (!line) continue;
 
     // 手数ヘッダーを検出
     if (/手数.*指し?手/.test(line)) {
@@ -92,12 +96,12 @@ export function kifToUsiMoves(kif: string): string[] {
       continue;
     }
 
-    // 終局マーカーで終了
-    if (/まで\d+手で/.test(line) || /中断/.test(line) || /投了/.test(line)) {
-      break;
+    // ヘッダー行をスキップ（先手：、後手：、手合割：等）
+    if (/^(先手|後手|手合割|棋戦|開始日時|終了日時|場所|持ち時間|秒読み)[：:]/.test(line)) {
+      continue;
     }
 
-    // 指し手行の自動検出
+    // 指し手行の自動検出（ヘッダー後）
     if (!inMoveSection) {
       if (/^\s*\d+\s+[1-9一二三四五六七八九同▲△]/.test(line) || /^[▲△]/.test(line)) {
         inMoveSection = true;
@@ -106,11 +110,16 @@ export function kifToUsiMoves(kif: string): string[] {
       }
     }
 
-    // コメント行、空行、時間のみの行をスキップ
-    if (line.startsWith("*") || line.startsWith("#") || !line) continue;
+    // 終局マーカーで終了（move section内でのみチェック）
+    if (/まで\d+手で/.test(line) || /^(中断|投了|千日手|持将棋)$/.test(line.replace(/^\s*\d+\s+/, ""))) {
+      break;
+    }
+
+    // コメント行、時間のみの行をスキップ
+    if (line.startsWith("*") || line.startsWith("#")) continue;
     if (/^\(\d{2}:\d{2}/.test(line)) continue;
 
-    // 指し手部分を抽出（"1 ７六歩(77) (0:01/...)" → "７六歩(77)"）
+    // 指し手部分を抽出
     let movePart = line;
     const lineMatch = /^\s*\d+\s+(.+)/.exec(line);
     if (lineMatch) {
@@ -121,13 +130,23 @@ export function kifToUsiMoves(kif: string): string[] {
       continue;
     }
 
-    // 時間情報を除去（コロンを含む括弧のみ = 時間表記）
-    movePart = movePart.replace(/\s*\(\s*\d+:\d+[^)]*\).*$/, "").trim();
+    // 終局行の中身チェック（"74 投了" → movePart = "投了"）
+    const movePartTrimmed = movePart.trim();
+    if (/^(投了|中断|千日手|持将棋)/.test(movePartTrimmed)) {
+      break;
+    }
 
-    const usi = parseKifMove(movePart, lastTo);
+    // 時間情報を除去（MM:SS/HH:MM:SS 形式のみ除去、移動元座標 (77) は残す）
+    movePart = movePart.replace(/\s*\(\s*\d+:\d+\/[^)]*\).*$/, "").trim();
+    // 括弧なしの時間（スペース区切り）も除去
+    movePart = movePart.replace(/\s+\d+:\d+.*$/, "").trim();
+
+    const isBlack = moveCount % 2 === 0;
+    const usi = parseKifMove(movePart, lastTo, isBlack);
     if (usi) {
       moves.push(usi.move);
       lastTo = usi.to;
+      moveCount++;
     }
   }
 
@@ -142,7 +161,7 @@ interface ParsedMove {
 /**
  * 1つのKIF指し手をUSI形式に変換する
  */
-function parseKifMove(movePart: string, lastTo: string | null): ParsedMove | null {
+function parseKifMove(movePart: string, lastTo: string | null, isBlack: boolean): ParsedMove | null {
   // 駒打ち: "▲３三歩打" or "３三歩打"
   const dropRe = /^[▲△]?\s*([1-9一二三四五六七八九])([1-9一二三四五六七八九])\s*([歩香桂銀金角飛玉王])\s*打/;
   const dropMatch = dropRe.exec(movePart);
@@ -158,7 +177,8 @@ function parseKifMove(movePart: string, lastTo: string | null): ParsedMove | nul
   }
 
   // 「同」記法: "同　銀(43)" or "▲同歩(76)"
-  const sameRe = /^[▲△]?\s*同\s*[^\(]*\((\d)(\d)\)/;
+  // 全角・半角両方の括弧に対応
+  const sameRe = /^[▲△]?\s*同\s*[^\(（]*[（(](\d)(\d)[)）]/;
   const sameMatch = sameRe.exec(movePart);
   if (sameMatch) {
     if (!lastTo) return null;
@@ -172,10 +192,11 @@ function parseKifMove(movePart: string, lastTo: string | null): ParsedMove | nul
   }
 
   // 長形式: "▲７六歩(77)" or "７六歩(77)"
-  const longRe = /^[▲△]?\s*([1-9一二三四五六七八九])([1-9一二三四五六七八九])\s*[^\(]*\((\d)(\d)\)/;
+  // 全角・半角両方の括弧に対応
+  const longRe = /^[▲△]?\s*([1-9一二三四五六七八九])([1-9一二三四五六七八九])\s*([^\(（\n\r]*?)[（(](\d)(\d)[)）]/;
   const longMatch = longRe.exec(movePart);
   if (longMatch) {
-    const [, colRaw, rowRaw, fromCol, fromRow] = longMatch;
+    const [, colRaw, rowRaw, piecePart, fromCol, fromRow] = longMatch;
     if (fromCol === "0" || fromRow === "0") return null;
     const col = toHalfNum(colRaw);
     const row = toHalfNum(rowRaw);
@@ -184,7 +205,22 @@ function parseKifMove(movePart: string, lastTo: string | null): ParsedMove | nul
     if (!toRank || !fromRank) return null;
     const from = `${fromCol}${fromRank}`;
     const to = `${col}${toRank}`;
-    const promote = /成/.test(movePart) && !/不成/.test(movePart) ? "+" : "";
+
+    // 明示的な成り/不成
+    let promote = "";
+    if (/成/.test(movePart) && !/不成/.test(movePart)) {
+      promote = "+";
+    } else if (!/不成/.test(movePart)) {
+      // 暗黙の成り: 歩/香/桂/銀が敵陣に入る場合（v2参考）
+      const pieceChar = (piecePart || "").trim();
+      if (/^[歩香桂銀]/.test(pieceChar)) {
+        const toRankNum = Number(row);
+        if ((isBlack && toRankNum <= 3) || (!isBlack && toRankNum >= 7)) {
+          promote = "+";
+        }
+      }
+    }
+
     return { move: `${from}${to}${promote}`, to };
   }
 

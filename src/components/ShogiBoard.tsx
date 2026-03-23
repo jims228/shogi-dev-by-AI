@@ -59,7 +59,7 @@ function PieceImage({ piece }: { piece: BoardPiece }) {
         width: DISPLAY_PIECE,
         height: DISPLAY_PIECE,
         backgroundImage: "url(/images/pieces.png)",
-        backgroundPosition: `-${pos.x * scale}px -${pos.y * scale}px`,
+        backgroundPosition: `${-(pos.x * scale)}px ${-(pos.y * scale)}px`,
         backgroundSize: `${SPRITE_TILE * 8 * scale}px ${SPRITE_TILE * 4 * scale}px`,
         backgroundRepeat: "no-repeat",
       }}
