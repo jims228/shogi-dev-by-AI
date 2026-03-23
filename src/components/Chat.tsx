@@ -143,6 +143,9 @@ export default function Chat() {
             try {
               const parsed = JSON.parse(payload);
               if (parsed.type === "text" || parsed.type === "fallback") {
+                if (parsed.type === "fallback") {
+                  console.log("[Chat] fallback response received");
+                }
                 setMessages((prev) => {
                   const updated = [...prev];
                   const last = updated[updated.length - 1];
@@ -157,6 +160,8 @@ export default function Chat() {
                   }
                   return updated;
                 });
+              } else if (parsed.type === "verify") {
+                console.log("[Chat] verify result:", parsed);
               } else if (parsed.type === "error") {
                 setError(parsed.content);
               }
