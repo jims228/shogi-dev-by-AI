@@ -79,7 +79,7 @@ function HandDisplay({ hand, color, label }: { hand: Hand; color: "b" | "w"; lab
   }
 
   return (
-    <div className="flex flex-col items-center gap-1 min-w-[3rem]">
+    <div className="flex flex-col items-center gap-1 min-w-12">
       <span className="text-xs text-zinc-500">{label}</span>
       {pieces.length === 0 ? (
         <span className="text-xs text-zinc-400">なし</span>
