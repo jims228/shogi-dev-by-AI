@@ -25,6 +25,8 @@ export interface EngineData {
   eval_type?: "cp" | "mate";
   candidates: EngineCandidate[];
   bestmove_ja?: string;
+  pv?: string[];
+  pv_ja?: string[];
 }
 
 /** プロンプト構築の入力 */
@@ -113,6 +115,13 @@ export function buildUserMessage(input: PromptInput): string {
         lines.push(`  ${i + 1}. ${moveName} (評価値: ${sign}${c.eval})${desc}`);
       });
     }
+
+    // R1: 読み筋（PV）があれば出力
+    const pvMoves = engineData.pv_ja ?? engineData.pv;
+    if (pvMoves && pvMoves.length > 0) {
+      lines.push(`読み筋: ${pvMoves.join(" → ")}`);
+    }
+
     lines.push("");
   }
 
