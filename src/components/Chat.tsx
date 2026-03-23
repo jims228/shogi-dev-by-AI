@@ -142,14 +142,17 @@ export default function Chat() {
 
             try {
               const parsed = JSON.parse(payload);
-              if (parsed.type === "text") {
+              if (parsed.type === "text" || parsed.type === "fallback") {
                 setMessages((prev) => {
                   const updated = [...prev];
                   const last = updated[updated.length - 1];
                   if (last?.role === "assistant") {
+                    const prefix = parsed.type === "fallback" && !last.content
+                      ? "⚠ "
+                      : "";
                     updated[updated.length - 1] = {
                       ...last,
-                      content: last.content + parsed.content,
+                      content: last.content + prefix + parsed.content,
                     };
                   }
                   return updated;

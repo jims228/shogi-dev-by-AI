@@ -69,6 +69,16 @@ describe("verifyExplanation", () => {
     expect(result.issues.some((i) => i.includes("factsにない座標"))).toBe(true);
   });
 
+  it("forbiddenClaims に含まれる座標は unknown 扱いにならない", () => {
+    // basePlan.forbiddenClaims に「先手の飛は２八にいる」がある → ２八 は known
+    const output =
+      "▲7八金が最善手です。先手の飛車は２八にいるので守りは安定しています。";
+
+    const result = verifyExplanation(output, basePlan);
+    // ２八 は forbiddenClaims にあるので unknown coordinate にならない
+    expect(result.issues.some((i) => i.includes("factsにない座標") && i.includes("２八"))).toBe(false);
+  });
+
   it("飛車の位置を間違えている → forbiddenClaims 違反", () => {
     const output =
       "▲7八金が最善手です。飛車が５八にいるので安心です。";
