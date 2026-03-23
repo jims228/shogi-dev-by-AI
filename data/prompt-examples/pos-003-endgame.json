@@ -12,12 +12,35 @@
     "eval": "mate 3",
     "eval_type": "mate",
     "candidates": [
-      { "move": "R*5a", "eval": "mate 3", "move_ja": "▲5一飛打", "description": "1段目（a筋）に飛車を打ち、玉の横への逃げ道を封鎖する" },
-      { "move": "R*6a", "eval": "mate 3", "move_ja": "▲6一飛打", "description": "同様に1段目に飛車を打つ。5一飛と同じ詰み筋" },
-      { "move": "R*8a", "eval": "mate 3", "move_ja": "▲8一飛打", "description": "同様に1段目に飛車を打つ。5一飛と同じ詰み筋" }
+      {
+        "move": "R*5a",
+        "eval": "mate 3",
+        "move_ja": "▲5一飛打",
+        "description": "1段目（a筋）に飛車を打ち、玉の横への逃げ道を封鎖する"
+      },
+      {
+        "move": "R*6a",
+        "eval": "mate 3",
+        "move_ja": "▲6一飛打",
+        "description": "同様に1段目に飛車を打つ。5一飛と同じ詰み筋"
+      },
+      {
+        "move": "R*8a",
+        "eval": "mate 3",
+        "move_ja": "▲8一飛打",
+        "description": "同様に1段目に飛車を打つ。5一飛と同じ詰み筋"
+      }
     ],
-    "pv": ["R*5a", "1a1b", "N*2d"],
-    "pv_ja": ["▲5一飛打", "△1二玉", "▲2四桂打"],
+    "pv": [
+      "R*5a",
+      "1a1b",
+      "N*2d"
+    ],
+    "pv_ja": [
+      "▲5一飛打",
+      "△1二玉",
+      "▲2四桂打"
+    ],
     "depth": 158,
     "engine": "YaneuraOu NNUE 9.10"
   },
@@ -45,5 +68,9 @@
     "total_pieces": 40
   },
   "verification_status": "engine_verified_position_constructed",
-  "verification_note": "YaneuraOu NNUE 9.10, depth 158, 595K nodes. SFENは手動構築した詰将棋的な局面。エンジンが正常に3手詰を検出。駒数40を手動検証済み。reviewer は盤面の駒配置（特に龍と銀の位置）を目視検証すべき"
+  "verification_note": "YaneuraOu NNUE 9.10, depth 158, 595K nodes. SFENは手動構築した詰将棋的な局面。エンジンが正常に3手詰を検出。駒数40を手動検証済み。reviewer は盤面の駒配置（特に龍と銀の位置）を目視検証すべき",
+  "king_positions": {
+    "sente": "9九",
+    "gote": "1一"
+  }
 }

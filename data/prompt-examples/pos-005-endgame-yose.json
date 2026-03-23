@@ -12,11 +12,36 @@
     "eval": 2855,
     "eval_type": "cp",
     "candidates": [
-      { "move": "2d7d", "eval": 2855, "move_ja": "▲7四龍", "description": "龍を中央に転換。7筋から相手陣に侵入する準備を整えつつ、広い利きを確保する" },
-      { "move": "2d3c", "eval": 2734, "move_ja": "▲3三龍", "description": "龍で銀を取る。駒得だが、龍が3三に固定されて働きが狭くなる" },
-      { "move": "2d2h", "eval": 2666, "move_ja": "▲2八龍", "description": "龍を自陣に引く。安全策だが攻めの速度が落ちる" }
+      {
+        "move": "2d7d",
+        "eval": 2855,
+        "move_ja": "▲7四龍",
+        "description": "龍を中央に転換。7筋から相手陣に侵入する準備を整えつつ、広い利きを確保する"
+      },
+      {
+        "move": "2d3c",
+        "eval": 2734,
+        "move_ja": "▲3三龍",
+        "description": "龍で銀を取る。駒得だが、龍が3三に固定されて働きが狭くなる"
+      },
+      {
+        "move": "2d2h",
+        "eval": 2666,
+        "move_ja": "▲2八龍",
+        "description": "龍を自陣に引く。安全策だが攻めの速度が落ちる"
+      }
     ],
-    "pv": ["2d7d", "P*6g", "P*2d", "3c2d", "6h6g", "S*6i", "B*5e", "2d3c", "G*6h"],
+    "pv": [
+      "2d7d",
+      "P*6g",
+      "P*2d",
+      "3c2d",
+      "6h6g",
+      "S*6i",
+      "B*5e",
+      "2d3c",
+      "G*6h"
+    ],
     "depth": 16,
     "engine": "YaneuraOu NNUE 9.10"
   },
@@ -43,5 +68,9 @@
     "total_pieces": 40
   },
   "verification_status": "engine_verified_position_constructed",
-  "verification_note": "YaneuraOu NNUE 9.10, depth 16, 3.19M nodes. SFENは手動構築した終盤局面。3候補手すべてが大きくプラスの評価（先手勝勢）で、教育的なコントラストは候補手の「質」の違いにある。reviewer は盤面配置を目視検証すべき"
+  "verification_note": "YaneuraOu NNUE 9.10, depth 16, 3.19M nodes. SFENは手動構築した終盤局面。3候補手すべてが大きくプラスの評価（先手勝勢）で、教育的なコントラストは候補手の「質」の違いにある。reviewer は盤面配置を目視検証すべき",
+  "king_positions": {
+    "sente": "8八",
+    "gote": "2二"
+  }
 }

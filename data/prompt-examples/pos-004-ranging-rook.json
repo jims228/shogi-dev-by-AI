@@ -12,11 +12,38 @@
     "eval": 3206,
     "eval_type": "cp",
     "candidates": [
-      { "move": "8h2b+", "eval": 3206, "move_ja": "▲2二角成", "description": "角で相手の角を取り、成って馬を作る。2二に馬ができると攻防に非常に強力" },
-      { "move": "7h7g", "eval": -201, "move_ja": "▲7七角", "description": "角を引いて守りに使う。安全に見えるが、後手に主導権を渡してしまう" },
-      { "move": "6i7i", "eval": -277, "move_ja": "▲7九金", "description": "金を引いて守りを固める。消極的で、後手の攻めを加速させてしまう" }
+      {
+        "move": "8h2b+",
+        "eval": 3206,
+        "move_ja": "▲2二角成",
+        "description": "角で相手の角を取り、成って馬を作る。2二に馬ができると攻防に非常に強力"
+      },
+      {
+        "move": "7h7g",
+        "eval": -201,
+        "move_ja": "▲7七角",
+        "description": "角を引いて守りに使う。安全に見えるが、後手に主導権を渡してしまう"
+      },
+      {
+        "move": "6i7i",
+        "eval": -277,
+        "move_ja": "▲7九金",
+        "description": "金を引いて守りを固める。消極的で、後手の攻めを加速させてしまう"
+      }
     ],
-    "pv": ["8h2b+", "2a3c", "3g4f", "5b5a", "2b1a", "4a3b", "1a1b", "4b5c", "7h7g", "5c6d", "6i7h"],
+    "pv": [
+      "8h2b+",
+      "2a3c",
+      "3g4f",
+      "5b5a",
+      "2b1a",
+      "4a3b",
+      "1a1b",
+      "4b5c",
+      "7h7g",
+      "5c6d",
+      "6i7h"
+    ],
     "depth": 19,
     "engine": "YaneuraOu NNUE 9.10"
   },
@@ -43,5 +70,9 @@
     "total_pieces": 40
   },
   "verification_status": "engine_verified_position_constructed",
-  "verification_note": "YaneuraOu NNUE 9.10, depth 19, 5.1M nodes. SFENは手動構築。初版では銀2枚が欠落していたが修正済み（3七銀・4二銀を追加）。駒数40を検証済み。reviewer は盤面配置を目視検証すべき"
+  "verification_note": "YaneuraOu NNUE 9.10, depth 19, 5.1M nodes. SFENは手動構築。初版では銀2枚が欠落していたが修正済み（3七銀・4二銀を追加）。駒数40を検証済み。reviewer は盤面配置を目視検証すべき",
+  "king_positions": {
+    "sente": "6九",
+    "gote": "8二"
+  }
 }
