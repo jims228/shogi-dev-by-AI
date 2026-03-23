@@ -239,7 +239,7 @@ export default function Chat() {
   return (
     <div className="flex flex-col h-full max-w-3xl mx-auto w-full">
       {/* Input area */}
-      <div className="p-4 border-b dark:border-zinc-700 flex-shrink-0">
+      <div className="p-4 border-b dark:border-zinc-700 shrink-0">
         <div className="flex items-center gap-2 mb-2">
           <label htmlFor="sfen-input" className="text-sm font-medium">
             SFEN / KIF
@@ -300,7 +300,7 @@ export default function Chat() {
 
       {/* Board + navigation */}
       {currentPosition && (
-        <div className="p-4 border-b dark:border-zinc-700 flex-shrink-0 overflow-x-auto">
+        <div className="p-4 border-b dark:border-zinc-700 shrink-0 overflow-x-auto">
           <ShogiBoard position={currentPosition} />
 
           {/* Move navigation (only for multi-position games) */}
@@ -320,7 +320,7 @@ export default function Chat() {
               >
                 ◀
               </button>
-              <span className="text-sm text-zinc-600 dark:text-zinc-400 min-w-[8rem] text-center">
+              <span className="text-sm text-zinc-600 dark:text-zinc-400 min-w-32 text-center">
                 {moveIndex === 0
                   ? "開始局面"
                   : `${moveIndex}手目`}{" "}
@@ -384,7 +384,7 @@ export default function Chat() {
 
       {/* Follow-up input */}
       {started && (
-        <div className="p-4 border-t dark:border-zinc-700 flex-shrink-0">
+        <div className="p-4 border-t dark:border-zinc-700 shrink-0">
           <div className="flex gap-2">
             <input
               type="text"

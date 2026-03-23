@@ -18,4 +18,4 @@ export function getClient(): GoogleGenAI {
 }
 
 export const MODEL = "gemini-2.5-flash";
-export const MAX_TOKENS = 1024;
+export const MAX_TOKENS = 4096;
