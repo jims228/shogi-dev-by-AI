@@ -151,3 +151,16 @@
 - **却下した案**: なし（C判定到達は全員の合意）
 - **影響**: Day 3タスク定義、requirements.md（拡張時）
 - **決定者**: 人間
+
+### DEC-014: v2を「将棋学習エンジン」として再定義（2026-03-24）
+- **決定**: v2は「解説AI」ではなく evidence-first の将棋学習エンジンとして再定義する
+- **中核方針**:
+  1. LLMは盤面分析器ではなく verbalizer に落とす
+  2. ExplanationPlan を中核の中間表現にする
+  3. Q&A は plan-grounded にする
+  4. 軽量 Verifier を必ず入れる
+  5. 最終目標は8段構成、初期実装は4-5段の細い縦切り
+- **初期実装**: Canonicalize → Planner（+薄いAnalysis Bundle） → Verbalizer → Verifier
+- **差別化**: 「将棋を説明するAI」ではなく「自分の悪手の理由と次の見方を教えるAI」
+- **参考文書**: v2_explanation_ai_redesign_summary_2026-03-24.md
+- **決定者**: 人間
