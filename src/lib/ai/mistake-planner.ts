@@ -12,6 +12,7 @@ import { kingSafety, materialBalance } from "../shogi/features";
 import { isLegalMove } from "../shogi/legality";
 import { usiToJapanese } from "../shogi/notation";
 import type { EngineData } from "./prompt";
+import { resolveOpeningCards } from "./opening-cards";
 import { verbalizeEval } from "./planner";
 import type {
   MistakeReviewPlan,
@@ -128,22 +129,39 @@ export function buildMistakeReviewPlan(
       : undefined,
   };
 
-  // nextLookFor (mate 時は詰みに特化)
+  // facts (既存ロジック流用の簡易版)
+  const facts = buildSimpleFacts(position, diffs);
+
+  // Opening cards (序盤のみ) — facts, forbiddenClaims, nextLookFor に注入
+  let openingNextLookFor: string | null = null;
+  const openingCautions: string[] = [];
+  if (position.moveNumber <= 30) {
+    const cards = resolveOpeningCards(position.moveHistory, position.moveNumber);
+    for (const card of cards) {
+      facts.push(`戦型ヒント: ${card.shortDescription}`);
+      if (!openingNextLookFor) {
+        openingNextLookFor = card.coachAngle;
+      }
+      if (card.caution) {
+        openingCautions.push(card.caution);
+      }
+    }
+  }
+
+  // nextLookFor (mate > opening card > default)
   const nextLookFor = isMate
     ? "相手の玉の逃げ道を全部塞げる駒の打ち場所を探しましょう。飛車や角で横や縦を封鎖できないか確認してください"
-    : generateNextLookFor(narrativeRole);
+    : openingNextLookFor ?? generateNextLookFor(narrativeRole);
 
   // retryQuestion
   const retryQuestion = generateRetryQuestion(narrativeRole, userMove, bestMove);
-
-  // facts (既存ロジック流用の簡易版)
-  const facts = buildSimpleFacts(position, diffs);
 
   // forbiddenClaims
   const forbiddenClaims = [
     "評価値の数字（+127等）を直接言わない",
     "ユーザーを責めない（「ダメな手」ではなく「もったいない手」等）",
     "エンジン候補手にない手との比較は行わない",
+    ...openingCautions,
   ];
   if (isMate) {
     forbiddenClaims.push("詰み局面では主線以外の手の良し悪しを比較しない");

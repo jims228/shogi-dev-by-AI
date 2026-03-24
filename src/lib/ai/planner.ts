@@ -15,6 +15,7 @@ import { kingSafety, materialBalance, attackMap } from "../shogi/features";
 import { isLegalMove } from "../shogi/legality";
 import { parseSfen } from "../shogi/parser";
 import { positionToSfen } from "../shogi/move";
+import { resolveOpeningCards } from "./opening-cards";
 
 /**
  * 評価値を初心者向けの日本語表現に変換する
@@ -115,8 +116,24 @@ export function buildPlan(
     forbidden.push("エンジンが明示的に示していない手について詰む/詰まないを断定しない");
   }
 
-  // --- 7. teachingPoint / retryQuestion ---
-  const teachingPoint = ext?.learning_point ?? "この局面固有の学びを1つ伝えてください。";
+  // --- 7. Opening cards (序盤のみ) ---
+  let openingTeachingPoint: string | null = null;
+  if (position.moveNumber <= 30) {
+    const cards = resolveOpeningCards(position.moveHistory, position.moveNumber);
+    for (const card of cards) {
+      facts.push(`戦型ヒント: ${card.shortDescription}`);
+      facts.push(`コーチ視点: ${card.coachAngle}`);
+      if (card.caution) {
+        forbidden.push(card.caution);
+      }
+      if (!openingTeachingPoint) {
+        openingTeachingPoint = card.coachAngle;
+      }
+    }
+  }
+
+  // --- 8. teachingPoint / retryQuestion ---
+  const teachingPoint = openingTeachingPoint ?? ext?.learning_point ?? "この局面固有の学びを1つ伝えてください。";
   const retryQuestion = ext?.verification_note
     ? `以下の検証ポイントに矛盾がないか確認してください: ${ext.verification_note}`
     : undefined;
