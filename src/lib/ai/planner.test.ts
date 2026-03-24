@@ -153,4 +153,25 @@ describe("buildPlan", () => {
     // mate 固有の制約は含まれない
     expect(plan.forbiddenClaims.some((c) => c.includes("主線以外"))).toBe(false);
   });
+
+  it("pos-001（序盤）→ facts に opening card の内容が含まれる", () => {
+    const { canonical, engineData } = loadPosition("pos-001-opening.json");
+    // pos-001 の moveHistory は空だが、moveNumber=3 なので undecided が fallback
+    const plan = buildPlan(canonical, engineData);
+
+    // undecided fallback or matched card の shortDescription/coachAngle が facts にある
+    const hasOpeningHint = plan.facts.some((f) => f.includes("戦型ヒント") || f.includes("コーチ視点"));
+    expect(hasOpeningHint).toBe(true);
+  });
+
+  it("pos-001（序盤）→ forbiddenClaims に opening card の caution が含まれる", () => {
+    const { canonical, engineData } = loadPosition("pos-001-opening.json");
+    const plan = buildPlan(canonical, engineData);
+
+    // undecided の caution: "戦型が未確定" 系
+    const hasCaution = plan.forbiddenClaims.some(
+      (c) => c.includes("戦型") || c.includes("断定")
+    );
+    expect(hasCaution).toBe(true);
+  });
 });
