@@ -117,7 +117,7 @@ export function buildMistakeReviewPlan(
   let betterReason = bestCandidate?.description ?? "エンジンが最善と評価しています";
   if (isMate && engineData) {
     const mateIn = Math.abs(engineData.eval);
-    betterReason = `${mateIn}手で詰みます。${betterReason}`;
+    betterReason = `${mateIn}手詰みの手順です`;
   }
   const betterIdea = {
     usi: bestMove.usi,
@@ -143,7 +143,12 @@ export function buildMistakeReviewPlan(
   const forbiddenClaims = [
     "評価値の数字（+127等）を直接言わない",
     "ユーザーを責めない（「ダメな手」ではなく「もったいない手」等）",
+    "エンジン候補手にない手との比較は行わない",
   ];
+  if (isMate) {
+    forbiddenClaims.push("詰み局面では主線以外の手の良し悪しを比較しない");
+    forbiddenClaims.push("エンジンが明示的に示していない手について詰む/詰まないを断定しない");
+  }
 
   // confidence (failReason がある場合は low に強制)
   const confidence: "high" | "medium" | "low" = failReason

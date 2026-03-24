@@ -108,6 +108,12 @@ export function buildPlan(
 
   // --- 6. forbiddenClaims ---
   const forbidden = buildForbiddenClaims(position);
+  // 比較手制限
+  forbidden.push("エンジン候補手にない手との比較は行わない");
+  if (isMate) {
+    forbidden.push("詰み局面では主線以外の手の良し悪しを比較しない");
+    forbidden.push("エンジンが明示的に示していない手について詰む/詰まないを断定しない");
+  }
 
   // --- 7. teachingPoint / retryQuestion ---
   const teachingPoint = ext?.learning_point ?? "この局面固有の学びを1つ伝えてください。";
