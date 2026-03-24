@@ -127,6 +127,9 @@ describe("buildMistakeReviewPlan", () => {
     expect(plan.whyChains[0].links.length).toBeGreaterThanOrEqual(2);
     expect(plan.betterIdea?.reason).toContain("詰み");
     expect(plan.context.narrativeRole).toBe("missed_tactic");
+    // mate 固有の forbiddenClaims
+    expect(plan.forbiddenClaims.some((c) => c.includes("主線以外"))).toBe(true);
+    expect(plan.forbiddenClaims.some((c) => c.includes("詰む/詰まない"))).toBe(true);
   });
 
   it("pos-001（非mate局面）→ whyChains が詰み手順ではない", () => {

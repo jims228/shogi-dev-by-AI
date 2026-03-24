@@ -136,4 +136,21 @@ describe("buildPlan", () => {
     // 合法な代替手は残る
     expect(plan.meaningfulAlternative?.usi).toBe("7g7f");
   });
+
+  it("pos-003（mate局面）→ forbiddenClaims に主線比較禁止が含まれる", () => {
+    const { canonical, engineData } = loadPosition("pos-003-endgame.json");
+    const plan = buildPlan(canonical, engineData);
+
+    expect(plan.forbiddenClaims.some((c) => c.includes("主線以外"))).toBe(true);
+    expect(plan.forbiddenClaims.some((c) => c.includes("詰む/詰まない"))).toBe(true);
+  });
+
+  it("pos-001（通常局面）→ forbiddenClaims に候補手比較制限が含まれる", () => {
+    const { canonical, engineData } = loadPosition("pos-001-opening.json");
+    const plan = buildPlan(canonical, engineData);
+
+    expect(plan.forbiddenClaims.some((c) => c.includes("候補手にない手"))).toBe(true);
+    // mate 固有の制約は含まれない
+    expect(plan.forbiddenClaims.some((c) => c.includes("主線以外"))).toBe(false);
+  });
 });
