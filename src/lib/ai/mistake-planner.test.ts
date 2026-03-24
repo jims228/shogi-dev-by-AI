@@ -80,6 +80,38 @@ describe("buildMistakeReviewPlan", () => {
     expect(validRoles).toContain(plan.context.narrativeRole);
   });
 
+  it("不合法な reviewedMove → confidence=low + failReason", () => {
+    const pos = parseSfen(
+      "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"
+    );
+    const canonical = fromSfenPosition(pos);
+
+    const plan = buildMistakeReviewPlan(
+      canonical,
+      { usi: "9a1i" },  // 不合法な手
+      { usi: "7g7f" }
+    );
+
+    expect(plan.confidence).toBe("low");
+    expect(plan.failReason).toBeDefined();
+  });
+
+  it("正常な reviewedMove → ja が盤面から自動生成される", () => {
+    const pos = parseSfen(
+      "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"
+    );
+    const canonical = fromSfenPosition(pos);
+
+    const plan = buildMistakeReviewPlan(
+      canonical,
+      { usi: "3i3h" },  // ja を渡さない → 自動生成
+      { usi: "7g7f" }
+    );
+
+    expect(plan.context.reviewedMove.ja).toBe("▲３八銀");
+    expect(plan.failReason).toBeUndefined();
+  });
+
   it("エンジンデータなしでも生成できる（confidence: low）", () => {
     const pos = parseSfen(
       "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"

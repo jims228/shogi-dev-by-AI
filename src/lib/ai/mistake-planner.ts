@@ -9,6 +9,8 @@ import type { SfenPosition } from "../shogi/types";
 import { estimatePhase } from "../shogi/parser";
 import { applyMove } from "../shogi/move";
 import { kingSafety, materialBalance } from "../shogi/features";
+import { isLegalMove } from "../shogi/legality";
+import { usiToJapanese } from "../shogi/notation";
 import type { EngineData } from "./prompt";
 import { verbalizeEval } from "./planner";
 import type {
@@ -47,15 +49,45 @@ export function buildMistakeReviewPlan(
   const phase = estimatePhase(position.moveNumber);
   const turn = position.turn;
 
+  // --- 盤面照合: reviewedMove ---
+  let failReason: MistakeReviewPlan["failReason"] = undefined;
+
+  // 日本語名を盤面から自動補完
+  if (!userMove.ja) {
+    const ja = usiToJapanese(sfenPos, userMove.usi);
+    if (ja) {
+      userMove = { ...userMove, ja };
+    }
+  }
+
+  // 合法性チェック
+  if (!isLegalMove(sfenPos, userMove.usi)) {
+    failReason = "illegal_move";
+  }
+
+  // --- 盤面照合: bestMove ---
+  if (!bestMove.ja) {
+    const ja = usiToJapanese(sfenPos, bestMove.usi);
+    if (ja) {
+      bestMove = { ...bestMove, ja };
+    }
+  }
+
+  if (bestMove.usi && !isLegalMove(sfenPos, bestMove.usi)) {
+    failReason = failReason ?? "best_move_mismatch";
+  }
+
   // 2局面を生成: userMove 適用後と bestMove 適用後
   let afterUser: SfenPosition | null = null;
   let afterBest: SfenPosition | null = null;
-  try {
-    afterUser = applyMove(sfenPos, userMove.usi);
-  } catch { /* invalid move */ }
-  try {
-    afterBest = applyMove(sfenPos, bestMove.usi);
-  } catch { /* invalid move */ }
+  if (!failReason) {
+    try {
+      afterUser = applyMove(sfenPos, userMove.usi);
+    } catch { /* invalid move */ }
+    try {
+      afterBest = applyMove(sfenPos, bestMove.usi);
+    } catch { /* invalid move */ }
+  }
 
   // 特徴量の差分
   const diffs = computeDiffs(sfenPos, afterUser, afterBest, turn);
@@ -101,10 +133,12 @@ export function buildMistakeReviewPlan(
     "ユーザーを責めない（「ダメな手」ではなく「もったいない手」等）",
   ];
 
-  // confidence
-  const confidence: "high" | "medium" | "low" = engineData
-    ? afterUser && afterBest ? "high" : "medium"
-    : "low";
+  // confidence (failReason がある場合は low に強制)
+  const confidence: "high" | "medium" | "low" = failReason
+    ? "low"
+    : engineData
+      ? afterUser && afterBest ? "high" : "medium"
+      : "low";
 
   return {
     audience: "beginner",
@@ -117,6 +151,7 @@ export function buildMistakeReviewPlan(
     confidence,
     forbiddenClaims,
     facts,
+    failReason,
   };
 }
 
