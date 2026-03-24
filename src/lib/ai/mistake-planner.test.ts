@@ -112,6 +112,37 @@ describe("buildMistakeReviewPlan", () => {
     expect(plan.failReason).toBeUndefined();
   });
 
+  it("pos-003（mate局面）→ whyChains が詰み手順ベース", () => {
+    const { canonical, engineData } = loadPosition("pos-003-endgame.json");
+
+    const plan = buildMistakeReviewPlan(
+      canonical,
+      { usi: "R*5b" },  // 不正解の飛車打ち
+      { usi: "R*5a", ja: "▲5一飛打" },
+      engineData
+    );
+
+    expect(plan.whyChains.length).toBeGreaterThanOrEqual(1);
+    expect(plan.whyChains[0].topic).toContain("詰み");
+    expect(plan.whyChains[0].links.length).toBeGreaterThanOrEqual(2);
+    expect(plan.betterIdea?.reason).toContain("詰み");
+    expect(plan.context.narrativeRole).toBe("missed_tactic");
+  });
+
+  it("pos-001（非mate局面）→ whyChains が詰み手順ではない", () => {
+    const { canonical, engineData } = loadPosition("pos-001-opening.json");
+
+    const plan = buildMistakeReviewPlan(
+      canonical,
+      { usi: "3i3h", ja: "▲3八銀" },
+      { usi: "6i7h", ja: "▲7八金" },
+      engineData
+    );
+
+    expect(plan.whyChains[0].topic).not.toContain("詰み");
+    expect(plan.context.narrativeRole).not.toBe("missed_tactic");
+  });
+
   it("エンジンデータなしでも生成できる（confidence: low）", () => {
     const pos = parseSfen(
       "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"
@@ -152,5 +183,20 @@ describe("buildMistakeReviewPrompt", () => {
     expect(prompt).toContain("ユーザーを責めない");
     expect(prompt).toContain("▲3八銀");
     expect(prompt).toContain("▲7八金");
+  });
+
+  it("mate局面のプロンプトに詰み手順説明の指示がある", () => {
+    const { canonical, engineData } = loadPosition("pos-003-endgame.json");
+
+    const plan = buildMistakeReviewPlan(
+      canonical,
+      { usi: "R*5b" },
+      { usi: "R*5a", ja: "▲5一飛打" },
+      engineData
+    );
+
+    const prompt = buildMistakeReviewPrompt(plan);
+    expect(prompt).toContain("詰み手順を正確に説明");
+    expect(prompt).toContain("詰みを見つけるコツ");
   });
 });
