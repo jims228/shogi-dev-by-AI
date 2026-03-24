@@ -60,23 +60,23 @@ describe("verifyExplanation", () => {
     expect(result.issues.some((i) => i.includes("最善手"))).toBe(true);
   });
 
-  it("facts にない座標が出力に含まれる → issues（警告）", () => {
+  it("facts にない座標が出力に含まれる → warnings（pass には影響しない）", () => {
     const output =
-      "▲7八金が最善手です。後手の角が３三にいるため注意が必要です。";
+      "▲7八金が最善手です。角頭を守りながら囲いの準備ができます。後手の角が３三にいるため注意が必要です。▲2六歩も有力ですが、守りが遅れるため7八金が優ります。";
 
     const result = verifyExplanation(output, basePlan);
-    expect(result.passed).toBe(false);
-    expect(result.issues.some((i) => i.includes("factsにない座標"))).toBe(true);
+    // unknown coordinates は warnings に入る（issues ではない）
+    expect(result.warnings.some((w) => w.includes("factsにない座標"))).toBe(true);
+    // bestMove は含まれていて、unknown coords は warning のみ → passed
+    expect(result.passed).toBe(true);
   });
 
   it("forbiddenClaims に含まれる座標は unknown 扱いにならない", () => {
-    // basePlan.forbiddenClaims に「先手の飛は２八にいる」がある → ２八 は known
     const output =
       "▲7八金が最善手です。先手の飛車は２八にいるので守りは安定しています。";
 
     const result = verifyExplanation(output, basePlan);
-    // ２八 は forbiddenClaims にあるので unknown coordinate にならない
-    expect(result.issues.some((i) => i.includes("factsにない座標") && i.includes("２八"))).toBe(false);
+    expect(result.warnings.some((w) => w.includes("factsにない座標") && w.includes("２八"))).toBe(false);
   });
 
   it("飛車の位置を間違えている → forbiddenClaims 違反", () => {
@@ -93,11 +93,10 @@ describe("verifyExplanation", () => {
       "▲7八金が最善手です。3手先まで読むと先手が有利になります。";
 
     const result = verifyExplanation(output, basePlan);
-    // +3 は50未満なので検出されない
     expect(result.issues.some((i) => i.includes("評価値の数字"))).toBe(false);
   });
 
-  it("途切れた出力（句点なし）→ issues に truncation", () => {
+  it("助詞で終わる出力 → truncation", () => {
     const output =
       "▲7八金が最善手です。角頭を守りながら囲いの準備ができますが、もし代わりに";
 
@@ -106,7 +105,7 @@ describe("verifyExplanation", () => {
     expect(result.issues.some((i) => i.includes("途中で切れ"))).toBe(true);
   });
 
-  it("短すぎる出力 → issues に truncation", () => {
+  it("短すぎる出力 → truncation", () => {
     const output = "7八金が最善手。";
 
     const result = verifyExplanation(output, basePlan);
@@ -114,7 +113,16 @@ describe("verifyExplanation", () => {
     expect(result.issues.some((i) => i.includes("途中で切れ"))).toBe(true);
   });
 
-  it("正常な出力（句点で終わる）→ truncation なし", () => {
+  it("ひらがなで終わる正常な出力 → truncation なし", () => {
+    const output =
+      "▲7八金が最善手です。角頭を守りながら囲いの準備ができます。▲2六歩も有力ですが、守りが遅れるため7八金が優ります。序盤は駒の配置を意識しましょう";
+
+    const result = verifyExplanation(output, basePlan);
+    // 「う」で終わる = ひらがな → truncation ではない
+    expect(result.issues.some((i) => i.includes("途中で切れ"))).toBe(false);
+  });
+
+  it("句点で終わる正常な出力 → truncation なし", () => {
     const output =
       "▲7八金が最善手です。角頭を守りながら囲いの準備ができます。▲2六歩も有力ですが、守りが遅れるため7八金が優ります。序盤は攻守のバランスが大切です。";
 

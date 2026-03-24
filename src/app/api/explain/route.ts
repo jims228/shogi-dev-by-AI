@@ -107,8 +107,15 @@ async function handlePlanPipeline(
 
     const fullOutput = response.text ?? "";
 
+    // Debug logs
+    console.log("[plan-pipeline] plan.bestMove:", plan.bestMove);
+    console.log("[plan-pipeline] plan.confidence:", plan.confidence);
+    console.log("[plan-pipeline] LLM output length:", fullOutput.length);
+    console.log("[plan-pipeline] LLM output last 50 chars:", fullOutput.slice(-50));
+
     // Verify before display
     const verifyResult = verifyExplanation(fullOutput, plan);
+    console.log("[plan-pipeline] verify result:", JSON.stringify(verifyResult));
 
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
@@ -129,6 +136,7 @@ async function handlePlanPipeline(
           type: "verify",
           passed: verifyResult.passed,
           issues: verifyResult.issues,
+          warnings: verifyResult.warnings,
         });
         controller.enqueue(encoder.encode(`data: ${verifyData}\n\n`));
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
