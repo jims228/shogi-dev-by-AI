@@ -1,0 +1,22 @@
+{
+  "id": "opening-right-silver",
+  "name": "右銀活用",
+  "category": "opening",
+  "parentId": null,
+  "triggerMoves": ["3i3h"],
+  "phase": "opening",
+  "shortDescription": "右銀を3八に展開し、攻めの銀として活用する準備",
+  "coachAngle": "▲3八銀は右側の銀を一段前に出す手です。ここから▲4六銀や▲2七銀と進め、攻めの駒として使います。銀は前方5方向に動けるので、攻めの先頭に立つのに向いています。居飛車では飛車と銀が攻めの主力になります。",
+  "caution": "▲3八銀の段階では、銀をどちらに使うか（攻め or 守り）は未確定。棒銀（▲2七銀〜▲2六銀〜▲2五銀）にも腰掛銀（▲4六銀）にも進められる。",
+  "keyTerms": ["銀", "棒銀", "腰掛銀", "攻め駒"],
+  "relatedCards": ["opening-static-rook", "concept-rook-pawn"],
+  "sourceRefs": [
+    {
+      "sourceRepo": "shogi-commentary-ai-v2",
+      "sourcePath": "docs/research/notes.md",
+      "ingestionMode": "adapted",
+      "permissionNote": "作者許可取得済み (2026-03-24)"
+    }
+  ],
+  "status": "permission-cleared"
+}

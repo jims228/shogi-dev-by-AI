@@ -1,0 +1,15 @@
+{
+  "id": "opening-undecided",
+  "name": "戦型未確定局面",
+  "category": "opening",
+  "parentId": null,
+  "triggerMoves": [],
+  "phase": "opening",
+  "shortDescription": "まだ戦型が決まっていない序盤の段階。断定を避ける",
+  "coachAngle": "序盤の最初の数手では、まだどんな戦型になるか決まっていません。▲7六歩△3四歩の段階では居飛車にも振り飛車にも角換わりにもなりえます。この段階で「矢倉戦です」や「角換わりです」と断定するのは早すぎます。「まだ方針を決めている段階」と理解しましょう。",
+  "caution": "このカードは戦型が未確定であることを伝えるために使う。序盤の最初の5〜10手は「お互いの方針を探っている段階」であり、戦型の確定は通常10手目以降。解説で戦型名を出す場合は「〜含み」「〜の可能性がある」のように留保をつける。",
+  "keyTerms": ["序盤", "戦型", "方針", "未確定"],
+  "relatedCards": ["opening-kakugawari-potential", "opening-static-rook", "concept-castling-prep"],
+  "sourceRefs": [],
+  "status": "original"
+}

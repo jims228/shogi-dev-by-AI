@@ -1,0 +1,22 @@
+{
+  "id": "opening-kakugawari-potential",
+  "name": "角換わり含み",
+  "category": "opening",
+  "parentId": "opening-open-bishop-lines",
+  "triggerMoves": ["7g7f", "3c3d"],
+  "phase": "opening",
+  "shortDescription": "両者が角道を開け、角交換の可能性がある序盤の形",
+  "coachAngle": "▲7六歩と△3四歩で両者の角道が通りました。ここからお互いの角が向かい合っているため、角交換になる可能性があります。ただし、この段階ではまだ角換わりとは決まっていません。次の手で居飛車にも振り飛車にも進めます。",
+  "caution": "この段階では戦型を断定しない。角道が開いているだけで、相手の方針次第で矢倉・相掛かり・振り飛車など様々な展開がありえる。",
+  "keyTerms": ["角道", "角頭", "角交換"],
+  "relatedCards": ["opening-static-rook", "concept-bishop-head", "opening-undecided"],
+  "sourceRefs": [
+    {
+      "sourceRepo": "shogi-commentary-ai-v2",
+      "sourcePath": "docs/research/notes.md",
+      "ingestionMode": "adapted",
+      "permissionNote": "作者許可取得済み (2026-03-24)"
+    }
+  ],
+  "status": "permission-cleared"
+}
