@@ -1,0 +1,15 @@
+{
+  "id": "concept-castling-prep",
+  "name": "入城準備",
+  "category": "concept",
+  "parentId": null,
+  "triggerMoves": ["5i6h", "5i4h", "6i7h"],
+  "phase": "opening",
+  "shortDescription": "玉を安全な場所に移動させ、囲いに入る準備をする",
+  "coachAngle": "玉を初期位置（5九）から横に動かして、金銀で守られた「囲い」に入ることを「入城」と言います。▲6八玉や▲4八玉は入城準備の一手です。攻めの駒を動かす前に、まず玉を安全にしておくのが将棋の基本です。「攻める前に守る」と覚えましょう。",
+  "caution": "入城の方向（左 or 右）は戦型によって異なる。居飛車なら左（▲6八玉〜▲7八玉）、振り飛車なら左（▲4八玉〜▲3八玉）が一般的だが、例外もある。",
+  "keyTerms": ["入城", "囲い", "玉", "守り"],
+  "relatedCards": ["concept-bishop-head", "opening-undecided"],
+  "sourceRefs": [],
+  "status": "original"
+}

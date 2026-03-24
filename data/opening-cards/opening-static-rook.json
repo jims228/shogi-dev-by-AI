@@ -1,0 +1,22 @@
+{
+  "id": "opening-static-rook",
+  "name": "居飛車含み",
+  "category": "opening",
+  "parentId": null,
+  "triggerMoves": ["2g2f"],
+  "phase": "opening",
+  "shortDescription": "飛車先の歩を突き、飛車を初期位置（2筋）のまま戦う意思表示",
+  "coachAngle": "▲2六歩は飛車先の歩を1マス進める手で、居飛車（飛車を動かさず2筋で戦う作戦）の第一歩です。この歩をさらに▲2五歩→▲2四歩と進めて相手の歩と交換できれば、飛車の利きが相手陣まで通ります。",
+  "caution": "▲2六歩を突いただけでは居飛車確定ではない。この後に▲6八飛などと振り飛車に転じることもある（ただし珍しい）。",
+  "keyTerms": ["飛車先", "居飛車", "歩交換"],
+  "relatedCards": ["concept-rook-pawn", "opening-kakugawari-potential", "opening-right-silver"],
+  "sourceRefs": [
+    {
+      "sourceRepo": "shogi-commentary-ai-v2",
+      "sourcePath": "docs/research/notes.md",
+      "ingestionMode": "adapted",
+      "permissionNote": "作者許可取得済み (2026-03-24)"
+    }
+  ],
+  "status": "permission-cleared"
+}

@@ -1,0 +1,22 @@
+{
+  "id": "concept-bishop-head",
+  "name": "角頭ケア",
+  "category": "concept",
+  "parentId": null,
+  "triggerMoves": ["6i7h", "7i6h"],
+  "phase": "opening",
+  "shortDescription": "角の真上（角頭）を金や銀で守り、弱点をなくす",
+  "coachAngle": "角は斜めに動く駒ですが、自分の真上（先手なら8七の地点）は守れません。ここを相手に狙われると一気に崩されます。▲7八金は角の斜め上に金を配置して、角頭（角の頭）を守る基本の一手です。序盤では角頭を放置しないことが大切です。",
+  "caution": "▲7八金は角頭ケアの代表的な手だが、局面によっては▲6八銀で守る場合もある。「角頭を守る」という目的が重要であり、守り方は一つではない。",
+  "keyTerms": ["角頭", "金", "守り", "弱点"],
+  "relatedCards": ["opening-kakugawari-potential", "concept-castling-prep"],
+  "sourceRefs": [
+    {
+      "sourceRepo": "shogi-commentary-ai-v2",
+      "sourcePath": "docs/research/notes.md",
+      "ingestionMode": "adapted",
+      "permissionNote": "作者許可取得済み (2026-03-24)"
+    }
+  ],
+  "status": "permission-cleared"
+}

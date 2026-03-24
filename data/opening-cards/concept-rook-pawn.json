@@ -1,0 +1,22 @@
+{
+  "id": "concept-rook-pawn",
+  "name": "飛車先の歩",
+  "category": "concept",
+  "parentId": null,
+  "triggerMoves": ["2g2f", "2f2e"],
+  "phase": "opening",
+  "shortDescription": "飛車の前の歩を突いて攻め筋を作る、居飛車の基本手",
+  "coachAngle": "飛車の前にある歩を進めることを「飛車先を突く」と言います。▲2六歩〜▲2五歩と進め、相手の歩とぶつけて交換すると、飛車の利き（攻撃範囲）が相手陣まで通ります。居飛車の攻めはここから始まります。歩を交換すると持ち駒に歩が1枚入るのも嬉しいポイントです。",
+  "caution": null,
+  "keyTerms": ["飛車先", "歩交換", "居飛車", "持ち駒"],
+  "relatedCards": ["opening-static-rook", "opening-right-silver"],
+  "sourceRefs": [
+    {
+      "sourceRepo": "shogi-commentary-ai-v2",
+      "sourcePath": "docs/research/notes.md",
+      "ingestionMode": "adapted",
+      "permissionNote": "作者許可取得済み (2026-03-24)"
+    }
+  ],
+  "status": "permission-cleared"
+}
