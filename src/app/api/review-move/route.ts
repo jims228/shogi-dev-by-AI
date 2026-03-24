@@ -91,6 +91,9 @@ export async function POST(request: NextRequest) {
     engineData
   );
   console.log("[review] plan:", JSON.stringify(plan, null, 2));
+  if (plan.failReason) {
+    console.log("[review] failReason:", plan.failReason);
+  }
 
   const systemPrompt = getSystemPrompt();
   const userMessage = buildMistakeReviewPrompt(plan);

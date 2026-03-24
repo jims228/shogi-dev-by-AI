@@ -127,4 +127,6 @@ export type MistakeReviewPlan = {
   forbiddenClaims: string[];
   /** LLM に伝える事実 */
   facts: string[];
+  /** 入力検証の失敗理由（設定されていれば LLM 呼び出しをスキップすべき） */
+  failReason?: "invalid_from_square" | "no_piece_on_from" | "illegal_move" | "notation_generation_failed" | "best_move_mismatch";
 };
