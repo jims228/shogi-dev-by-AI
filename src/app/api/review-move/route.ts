@@ -82,15 +82,19 @@ export async function POST(request: NextRequest) {
   }
 
   // Build plan
+  console.log("[review] input:", JSON.stringify({ position: body.position, reviewedMove: body.reviewedMove, bestMove }));
+
   const plan = buildMistakeReviewPlan(
     canonical,
     body.reviewedMove,
     bestMove,
     engineData
   );
+  console.log("[review] plan:", JSON.stringify(plan, null, 2));
 
   const systemPrompt = getSystemPrompt();
   const userMessage = buildMistakeReviewPrompt(plan);
+  console.log("[review] prompt:", userMessage.slice(0, 500));
 
   const contents: Content[] = [
     { role: "user", parts: [{ text: userMessage }] },
@@ -108,10 +112,11 @@ export async function POST(request: NextRequest) {
     });
 
     const fullOutput = response.text ?? "";
+    console.log("[review] LLM output:", fullOutput);
 
     // Verify
     const verifyResult = verifyMistakeReview(fullOutput, plan);
-    console.log("[review-move] verify:", JSON.stringify(verifyResult));
+    console.log("[review] verify:", JSON.stringify(verifyResult));
 
     // SSE response (same format as /api/explain for client compat)
     const encoder = new TextEncoder();
