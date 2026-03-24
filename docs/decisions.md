@@ -164,3 +164,15 @@
 - **差別化**: 「将棋を説明するAI」ではなく「自分の悪手の理由と次の見方を教えるAI」
 - **参考文書**: v2_explanation_ai_redesign_summary_2026-03-24.md
 - **決定者**: 人間
+
+### DEC-015: review mode 3レーン制再設計（2026-03-24）
+- **決定**: review mode を opening / mate / 通常 の3レーンに分離し、P0→P1→P2→P3 の優先度で修正する
+- **理由**: 人間レビュー5ケースで「LLMが意味づけをしすぎ」「PV未活用」「駒種取り違え」が判明。根本原因は (1) エンジンPVが主役になっていない (2) 序盤に定跡知識がない (3) reviewedMoveのgroundingに穴がある の3点
+- **3レーン**:
+  - レーンA（opening）: 定跡DB主導、LLM不要
+  - レーンB（mate/戦術）: engine PV をそのまま使う、template-first
+  - レーンC（通常）: WhyChain + template-first + optional naturalizer
+- **優先度**: P0(reviewedMove grounding) → P1(mate PV主役化) → P2(opening レーン) → P3(template-first)
+- **プロダクト定義の更新**: 旧「なぜ負けた？に答えて、次に何を見るかを教えるAI」→ 新「エンジンの読み筋・局面文脈・定跡知識に基づいて悪手を振り返り、次に何を見るかを教えるAI」
+- **参考文書**: docs/architecture/review-mode-redesign.md
+- **決定者**: orchestrator（人間レビューに基づく）
