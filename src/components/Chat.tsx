@@ -24,6 +24,7 @@ export default function Chat() {
   const [inputMode, setInputMode] = useState<"sfen" | "kif" | null>(null);
   const [parseError, setParseError] = useState("");
   const [positions, setPositions] = useState<SfenPosition[]>([]);
+  const [moveHistory, setMoveHistory] = useState<string[]>([]);
   const [moveIndex, setMoveIndex] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -51,6 +52,7 @@ export default function Chat() {
     setRawInput(value);
     setParseError("");
     setPositions([]);
+    setMoveHistory([]);
     setMoveIndex(0);
 
     const trimmed = value.trim();
@@ -66,6 +68,7 @@ export default function Chat() {
         const startPos = parseSfen(SAMPLE_SFEN.replace(/ \d+$/, " 1"));
         const posArray = generatePositions(startPos, moves);
         setPositions(posArray);
+        setMoveHistory(moves);
         setMoveIndex(posArray.length - 1);
       } catch (e) {
         setParseError((e as Error).message);
@@ -75,6 +78,7 @@ export default function Chat() {
       try {
         const pos = parseSfen(trimmed);
         setPositions([pos]);
+        setMoveHistory([]);
         setMoveIndex(0);
       } catch (e) {
         setParseError((e as Error).message);
@@ -224,6 +228,115 @@ export default function Chat() {
     await streamResponse(currentSfen, undefined, messages);
   }, [currentSfen, currentPosition, loading, messages, streamResponse]);
 
+  const handleReviewMove = useCallback(async () => {
+    if (loading || moveIndex <= 0 || positions.length < 2) return;
+
+    // 1手前の局面のSFEN
+    const beforePosition = positions[moveIndex - 1];
+    const beforeSfen = positionToSfen(beforePosition);
+
+    // レビュー対象の手（USI形式）
+    const reviewedUsi = moveHistory[moveIndex - 1];
+    if (!reviewedUsi) return;
+
+    const userMsg: ChatMessage = {
+      role: "user",
+      content: `${moveIndex}手目の ${reviewedUsi} をレビューしてください。`,
+    };
+    setMessages((prev) => [...prev, userMsg]);
+
+    // Assistant placeholder
+    setLoading(true);
+    setError("");
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+    try {
+      const res = await fetch("/api/review-move", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          position: beforeSfen,
+          reviewedMove: { usi: reviewedUsi },
+          audience: "beginner",
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? `エラー (${res.status})`);
+        setMessages((prev) => prev.slice(0, -1));
+        setLoading(false);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        setError("ストリームの取得に失敗しました");
+        setMessages((prev) => prev.slice(0, -1));
+        setLoading(false);
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buf = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6);
+          if (payload === "[DONE]") break;
+
+          try {
+            const parsed = JSON.parse(payload);
+            if (parsed.type === "text" || parsed.type === "fallback") {
+              if (parsed.type === "fallback") {
+                console.log("[Chat] review fallback received");
+              }
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last?.role === "assistant") {
+                  const prefix = parsed.type === "fallback" && !last.content
+                    ? "⚠ "
+                    : "";
+                  updated[updated.length - 1] = {
+                    ...last,
+                    content: last.content + prefix + parsed.content,
+                  };
+                }
+                return updated;
+              });
+            } else if (parsed.type === "verify") {
+              console.log("[Chat] review verify:", parsed);
+            } else if (parsed.type === "error") {
+              setError(parsed.content);
+            }
+          } catch {
+            // skip
+          }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        setError("通信エラーが発生しました");
+        setMessages((prev) => prev.slice(0, -1));
+      }
+    } finally {
+      setLoading(false);
+      abortRef.current = null;
+    }
+  }, [loading, moveIndex, positions, moveHistory]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -238,6 +351,7 @@ export default function Chat() {
     setMessages([]);
     setError("");
     setPositions([]);
+    setMoveHistory([]);
     setMoveIndex(0);
     setRawInput("");
     setInputMode(null);
@@ -351,13 +465,24 @@ export default function Chat() {
                 ▶|
               </button>
               {started && (
-                <button
-                  onClick={handleExplainAtMove}
-                  disabled={loading}
-                  className="px-2 py-1 text-xs border rounded text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:border-zinc-600 disabled:opacity-50"
-                >
-                  この局面を解説
-                </button>
+                <>
+                  <button
+                    onClick={handleExplainAtMove}
+                    disabled={loading}
+                    className="px-2 py-1 text-xs border rounded text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:border-zinc-600 disabled:opacity-50"
+                  >
+                    この局面を解説
+                  </button>
+                  {moveIndex > 0 && moveHistory.length > 0 && (
+                    <button
+                      onClick={handleReviewMove}
+                      disabled={loading}
+                      className="px-2 py-1 text-xs border rounded text-orange-600 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950 dark:border-orange-700 disabled:opacity-50"
+                    >
+                      この手をレビュー
+                    </button>
+                  )}
+                </>
               )}
             </div>
           )}
