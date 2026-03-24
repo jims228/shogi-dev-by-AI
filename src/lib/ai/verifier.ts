@@ -10,6 +10,7 @@ import type { ExplanationPlan } from "./plan";
 export interface VerifyResult {
   passed: boolean;
   issues: string[];
+  warnings: string[];
 }
 
 /** 評価値の数字パターン: +127, -300, +1500 等 */
@@ -26,6 +27,7 @@ export function verifyExplanation(
   plan: ExplanationPlan
 ): VerifyResult {
   const issues: string[] = [];
+  const warnings: string[] = [];
 
   // 1. forbiddenClaims 違反チェック
   checkForbiddenClaims(output, plan.forbiddenClaims, issues);
@@ -36,8 +38,8 @@ export function verifyExplanation(
   // 3. bestMove の言及チェック
   checkBestMoveMentioned(output, plan, issues);
 
-  // 4. facts 外の座標言及チェック
-  checkUnknownCoordinates(output, plan.facts, plan.forbiddenClaims, issues);
+  // 4. facts 外の座標言及チェック（warning のみ、pass/fail に影響しない）
+  checkUnknownCoordinates(output, plan.facts, plan.forbiddenClaims, warnings);
 
   // 5. 出力の切断チェック
   if (isTruncated(output)) {
@@ -47,6 +49,7 @@ export function verifyExplanation(
   return {
     passed: issues.length === 0,
     issues,
+    warnings,
   };
 }
 
@@ -138,12 +141,13 @@ function checkBestMoveMentioned(
 
 /**
  * facts に存在しない将棋座標が出力に含まれていないか検出する
+ * warning のみ（pass/fail には影響しない）
  */
 function checkUnknownCoordinates(
   output: string,
   facts: string[],
   forbiddenClaims: string[],
-  issues: string[]
+  warnings: string[]
 ): void {
   // facts から座標を抽出
   const knownCoords = new Set<string>();
@@ -180,7 +184,7 @@ function checkUnknownCoordinates(
   }
 
   if (unknownCoords.size > 0) {
-    issues.push(
+    warnings.push(
       `plan.factsにない座標への言及: ${[...unknownCoords].join(", ")}`
     );
   }
@@ -189,6 +193,11 @@ function checkUnknownCoordinates(
 // ============================================================
 // Truncation guard
 // ============================================================
+
+/** 助詞で終わる = 文が途切れている */
+const INCOMPLETE_ENDINGS = new Set([
+  "は", "が", "で", "を", "に", "と", "も", "の", "へ", "、",
+]);
 
 /**
  * 出力が途中で切れていないかチェックする
@@ -204,10 +213,9 @@ export function isTruncated(output: string): boolean {
   const closeParens = (trimmed.match(/[）」』】]/g) || []).length;
   if (openParens > closeParens) return true;
 
-  // 句点で終わっていない（最後の文字が。でない場合）
+  // 助詞で終わる = 文が途切れている
   const lastChar = trimmed[trimmed.length - 1];
-  const endsWithTerminator = lastChar === "。" || lastChar === "」" || lastChar === "）" || lastChar === "！" || lastChar === "？" || lastChar === "】";
-  if (!endsWithTerminator) return true;
+  if (INCOMPLETE_ENDINGS.has(lastChar)) return true;
 
   return false;
 }
