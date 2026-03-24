@@ -89,14 +89,19 @@ export function buildMistakeReviewPlan(
     } catch { /* invalid move */ }
   }
 
+  // mate 検出: PV を主役にする
+  const isMate = engineData?.eval_type === "mate";
+
   // 特徴量の差分
   const diffs = computeDiffs(sfenPos, afterUser, afterBest, turn);
 
-  // WhyChains の生成
-  const whyChains = buildWhyChains(diffs);
+  // WhyChains の生成（mate 時は PV ベース）
+  const whyChains = isMate && engineData
+    ? buildMateWhyChains(engineData)
+    : buildWhyChains(diffs);
 
   // NarrativeRole の判定
-  const narrativeRole = determineNarrativeRole(diffs);
+  const narrativeRole = isMate ? "missed_tactic" as NarrativeRole : determineNarrativeRole(diffs);
 
   // ContextWindow
   const context: ContextWindow = {
@@ -109,17 +114,24 @@ export function buildMistakeReviewPlan(
   // betterIdea
   const bestMoveJa = bestMove.ja ?? engineData?.bestmove_ja ?? bestMove.usi;
   const bestCandidate = engineData?.candidates?.[0];
+  let betterReason = bestCandidate?.description ?? "エンジンが最善と評価しています";
+  if (isMate && engineData) {
+    const mateIn = Math.abs(engineData.eval);
+    betterReason = `${mateIn}手で詰みます。${betterReason}`;
+  }
   const betterIdea = {
     usi: bestMove.usi,
     ja: bestMoveJa,
-    reason: bestCandidate?.description ?? "エンジンが最善と評価しています",
+    reason: betterReason,
     evalExpression: engineData
       ? verbalizeEval(engineData.eval, engineData.eval_type)
       : undefined,
   };
 
-  // nextLookFor
-  const nextLookFor = generateNextLookFor(narrativeRole);
+  // nextLookFor (mate 時は詰みに特化)
+  const nextLookFor = isMate
+    ? "相手の玉の逃げ道を全部塞げる駒の打ち場所を探しましょう。飛車や角で横や縦を封鎖できないか確認してください"
+    : generateNextLookFor(narrativeRole);
 
   // retryQuestion
   const retryQuestion = generateRetryQuestion(narrativeRole, userMove, bestMove);
@@ -200,6 +212,40 @@ function computeDiffs(
 // ============================================================
 // WhyChains の生成
 // ============================================================
+
+/**
+ * mate 局面用: PV を WhyChain に展開する
+ */
+function buildMateWhyChains(engineData: EngineData): WhyChain[] {
+  const pvMoves = engineData.pv_ja ?? engineData.pv ?? [];
+  const mateIn = Math.abs(engineData.eval);
+
+  if (pvMoves.length === 0) {
+    return [{
+      topic: `${mateIn}手詰み`,
+      links: [{
+        kind: "local_fact",
+        statement: `${mateIn}手で詰みがあります`,
+        confidence: "high",
+      }],
+    }];
+  }
+
+  const links: WhyLink[] = pvMoves.map((move, i) => ({
+    kind: "local_fact" as const,
+    statement: i === pvMoves.length - 1
+      ? `${move}で詰み`
+      : i % 2 === 0
+        ? `${move}で逃げ道を封鎖`
+        : `${move}と逃げるしかないが`,
+    confidence: "high" as const,
+  }));
+
+  return [{
+    topic: `${mateIn}手詰みの手順`,
+    links,
+  }];
+}
 
 function buildWhyChains(diffs: FeatureDiffs): WhyChain[] {
   const chains: WhyChain[] = [];

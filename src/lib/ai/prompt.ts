@@ -372,13 +372,22 @@ export function buildMistakeReviewPrompt(plan: MistakeReviewPlan): string {
   }
   lines.push("");
 
-  // 出力形式
+  // 出力形式（mate 時は詰み手順に特化）
+  const hasMateChain = plan.whyChains.some((c) => c.topic.includes("詰み"));
   lines.push("【出力形式】");
-  lines.push("以下の構成でレビューを書いてください:");
-  lines.push("1. あなたの手の評価（1文、責めない）");
-  lines.push("2. なぜ差がついたか（2-3文、因果を具体的に）");
-  lines.push("3. より良い手ならどうなったか（1-2文）");
-  lines.push("4. 次に同じような場面で何を見るか（1文）");
+  if (hasMateChain) {
+    lines.push("この局面は詰みがある局面でした。詰み手順を正確に説明してください:");
+    lines.push("1. 実は詰みがある局面だったこと（1文）");
+    lines.push("2. 詰み手順を1手ずつ、各手の意味を添えて説明（手数分）");
+    lines.push("3. あなたの手ではなぜ詰みを逃したか（1文）");
+    lines.push("4. 詰みを見つけるコツ（1文）");
+  } else {
+    lines.push("以下の構成でレビューを書いてください:");
+    lines.push("1. あなたの手の評価（1文、責めない）");
+    lines.push("2. なぜ差がついたか（2-3文、因果を具体的に）");
+    lines.push("3. より良い手ならどうなったか（1-2文）");
+    lines.push("4. 次に同じような場面で何を見るか（1文）");
+  }
 
   return lines.join("\n");
 }
