@@ -9,7 +9,7 @@ import { join } from "path";
 import type { SfenPosition, Hand, AnyPieceType, BoardPiece } from "../shogi/types";
 import { PIECE_NAMES, COLOR_NAMES } from "../shogi/types";
 import { estimatePhase } from "../shogi/parser";
-import type { ExplanationPlan } from "./plan";
+import type { ExplanationPlan, MistakeReviewPlan } from "./plan";
 
 /** エンジン候補手 */
 export interface EngineCandidate {
@@ -306,6 +306,79 @@ export function buildPlanPrompt(plan: ExplanationPlan): string {
   lines.push("2. なぜこの手が良いか（2-3文）");
   lines.push("3. なぜ比較手が劣るか（1-2文）");
   lines.push("4. 次に同じ場面で何を見るか（1文）");
+
+  return lines.join("\n");
+}
+
+// ============================================================
+// MistakeReviewPlan → プロンプト
+// ============================================================
+
+/**
+ * MistakeReviewPlan からユーザーメッセージを構築する。
+ * 盤面テキストやSFENは含めない（plan-only）。
+ */
+export function buildMistakeReviewPrompt(plan: MistakeReviewPlan): string {
+  const lines: string[] = [];
+
+  // あなたの手
+  lines.push("【あなたの手】");
+  lines.push(plan.context.reviewedMove.ja ?? plan.context.reviewedMove.usi);
+  lines.push("");
+
+  // より良い手
+  if (plan.betterIdea) {
+    lines.push("【より良い手】");
+    lines.push(`${plan.betterIdea.ja}: ${plan.betterIdea.reason}`);
+    if (plan.betterIdea.evalExpression) {
+      lines.push(`この手なら: ${plan.betterIdea.evalExpression}`);
+    }
+    lines.push("");
+  }
+
+  // なぜ差がついたか
+  if (plan.whyChains.length > 0) {
+    lines.push("【なぜ差がついたか】");
+    for (const chain of plan.whyChains) {
+      const statements = chain.links.map((l) => l.statement).join("。そのため、");
+      lines.push(`- ${chain.topic}: ${statements}`);
+    }
+    lines.push("");
+  }
+
+  // 事実
+  lines.push("【局面の事実】");
+  for (const fact of plan.facts) {
+    lines.push(`- ${fact}`);
+  }
+  lines.push("");
+
+  // 次に同じ局面が来たら
+  lines.push("【次に同じ局面が来たら】");
+  lines.push(plan.nextLookFor);
+  lines.push("");
+
+  // 考えてみよう
+  if (plan.retryQuestion) {
+    lines.push("【考えてみよう】");
+    lines.push(plan.retryQuestion);
+    lines.push("");
+  }
+
+  // 禁止事項
+  lines.push("【禁止事項】");
+  for (const claim of plan.forbiddenClaims) {
+    lines.push(`- ${claim}`);
+  }
+  lines.push("");
+
+  // 出力形式
+  lines.push("【出力形式】");
+  lines.push("以下の構成でレビューを書いてください:");
+  lines.push("1. あなたの手の評価（1文、責めない）");
+  lines.push("2. なぜ差がついたか（2-3文、因果を具体的に）");
+  lines.push("3. より良い手ならどうなったか（1-2文）");
+  lines.push("4. 次に同じような場面で何を見るか（1文）");
 
   return lines.join("\n");
 }

@@ -60,3 +60,71 @@ export type ExplanationPlan = {
   /** plan の確信度（エンジンデータの有無等で決まる） */
   confidence: "high" | "medium" | "low";
 };
+
+// ============================================================
+// MistakeReviewPlan 関連の型
+// ============================================================
+
+/** WhyLink の種別 */
+export type WhyLinkKind =
+  | "local_fact"
+  | "exchange"
+  | "safety"
+  | "line_opening"
+  | "piece_activity"
+  | "king_safety"
+  | "future_threat"
+  | "lesson";
+
+/** 因果の1リンク */
+export type WhyLink = {
+  kind: WhyLinkKind;
+  statement: string;
+  evidence?: string;
+  confidence: "high" | "medium" | "low";
+};
+
+/** 因果チェーン（1つのトピック） */
+export type WhyChain = {
+  topic: string;
+  links: WhyLink[];
+};
+
+/** 悪手の物語的役割 */
+export type NarrativeRole =
+  | "missed_defense"
+  | "overattack"
+  | "bad_exchange"
+  | "slow_move"
+  | "king_exposed"
+  | "missed_tactic";
+
+/** レビュー対象の文脈 */
+export type ContextWindow = {
+  previousMoves: string[];
+  reviewedMove: { usi: string; ja?: string };
+  expectedReply?: { usi: string; ja?: string };
+  phase: "opening" | "middle" | "endgame";
+  narrativeRole: NarrativeRole;
+};
+
+/** 悪手レビュー計画 */
+export type MistakeReviewPlan = {
+  audience: "beginner" | "intermediate";
+  context: ContextWindow;
+  whyChains: WhyChain[];
+  betterIdea?: {
+    usi: string;
+    ja: string;
+    reason: string;
+    evalExpression?: string;
+  };
+  keyTerms: string[];
+  nextLookFor: string;
+  retryQuestion?: string;
+  confidence: "high" | "medium" | "low";
+  /** LLM が言ってはいけない主張 */
+  forbiddenClaims: string[];
+  /** LLM に伝える事実 */
+  facts: string[];
+};
