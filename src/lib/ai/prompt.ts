@@ -239,16 +239,42 @@ const FOCUS_LABELS: Record<string, string> = {
 };
 
 /**
- * ExplanationPlan のみからユーザーメッセージを構築する。
- * 盤面テキスト・SFEN・raw history は含めない。
+ * ExplanationPlan のみからユーザーメッセージを構築する（template-first）。
+ * LLM は語尾の自然化と接続詞の追加のみ行う。
  */
 export function buildPlanPrompt(plan: ExplanationPlan): string {
   const lines: string[] = [];
 
-  // 解説プラン
-  lines.push("【解説プラン】");
-  lines.push(`対象: ${plan.audience === "beginner" ? "初心者" : "中級者"}`);
-  lines.push(`焦点: ${plan.focus.map((f) => FOCUS_LABELS[f] ?? f).join("、")}`);
+  lines.push("あなたは将棋の初心者コーチです。");
+  lines.push("以下の【テンプレート】の各項目を、初心者に分かりやすい日本語でつないでください。");
+  lines.push("項目の内容は変えないでください。言い回しだけ自然にしてください。");
+  lines.push("テンプレートにない情報は一切追加しないでください。");
+  lines.push("特に、駒の位置関係（横、隣、前、後ろ）や利き関係（紐、守り）については、");
+  lines.push("【事実】に書かれていること以外は言わないでください。");
+  lines.push("");
+
+  // テンプレート
+  lines.push("【テンプレート】");
+
+  // 局面の状況: facts の先頭2-3個
+  const situationFacts = plan.facts.slice(0, 3).join("。");
+  lines.push(`■ 局面の状況: ${situationFacts}`);
+
+  // 最善手
+  lines.push(`■ 最善手: ${plan.bestMove.ja}。${plan.bestMove.reason}`);
+
+  // 読み筋
+  if (plan.bestMove.mainLine && plan.bestMove.mainLine.length > 0) {
+    lines.push(`■ 読み筋: ${plan.bestMove.mainLine.join(" → ")}`);
+  }
+
+  // 比較
+  if (plan.meaningfulAlternative) {
+    lines.push(`■ 比較: ${plan.meaningfulAlternative.ja}は${plan.meaningfulAlternative.whyWorse}`);
+  }
+
+  // 学び
+  lines.push(`■ 学び: ${plan.teachingPoint}`);
   lines.push("");
 
   // 事実
@@ -258,54 +284,14 @@ export function buildPlanPrompt(plan: ExplanationPlan): string {
   }
   lines.push("");
 
-  // 最善手
-  lines.push("【最善手】");
-  lines.push(`${plan.bestMove.ja}: ${plan.bestMove.reason}`);
-  if (plan.bestMove.mainLine && plan.bestMove.mainLine.length > 0) {
-    lines.push(`読み筋: ${plan.bestMove.mainLine.join(" → ")}`);
-  }
-  // mate時の追加指示
-  const hasMate = plan.facts.some((f) => f.includes("手詰み"));
-  if (hasMate) {
-    lines.push("※ 詰み手順を正確に説明してください。手順の各手の意味も初心者に分かるように補足してください。");
-  }
-  lines.push("");
-
-  // 比較候補
-  if (plan.meaningfulAlternative) {
-    lines.push("【比較候補】");
-    lines.push(`${plan.meaningfulAlternative.ja}: ${plan.meaningfulAlternative.whyWorse}`);
-    lines.push("");
-  }
-
-  // 初心者の間違いやすい手
-  if (plan.commonMistake) {
-    lines.push("【初心者の間違いやすい手】");
-    lines.push(plan.commonMistake.ja);
-    lines.push(`なぜ指したくなるか: ${plan.commonMistake.whyTempting}`);
-    lines.push(`なぜ悪いか: ${plan.commonMistake.whyBad}`);
-    lines.push("");
-  }
-
-  // 教えるポイント
-  lines.push("【教えるポイント】");
-  lines.push(plan.teachingPoint);
-  lines.push("");
-
   // 禁止事項
   lines.push("【禁止事項】");
+  lines.push("- テンプレートにない情報を追加しない");
+  lines.push("- 駒の位置関係を自分で推測しない");
+  lines.push("- 「○○の横」「○○の隣」「○○の前」は事実に書かれている場合のみ使用可");
   for (const claim of plan.forbiddenClaims) {
     lines.push(`- ${claim}`);
   }
-  lines.push("");
-
-  // 出力形式
-  lines.push("【出力形式】");
-  lines.push("以下の構成で解説を書いてください:");
-  lines.push("1. 一言まとめ（1文）");
-  lines.push("2. なぜこの手が良いか（2-3文）");
-  lines.push("3. なぜ比較手が劣るか（1-2文）");
-  lines.push("4. 次に同じ場面で何を見るか（1文）");
 
   return lines.join("\n");
 }
@@ -315,78 +301,56 @@ export function buildPlanPrompt(plan: ExplanationPlan): string {
 // ============================================================
 
 /**
- * MistakeReviewPlan からユーザーメッセージを構築する。
- * 盤面テキストやSFENは含めない（plan-only）。
+ * MistakeReviewPlan からユーザーメッセージを構築する（template-first）。
+ * LLM は語尾の自然化と接続詞の追加のみ行う。
  */
 export function buildMistakeReviewPrompt(plan: MistakeReviewPlan): string {
   const lines: string[] = [];
 
-  // あなたの手
-  lines.push("【あなたの手】");
-  lines.push(plan.context.reviewedMove.ja ?? plan.context.reviewedMove.usi);
+  lines.push("あなたは将棋の初心者コーチです。");
+  lines.push("以下の【テンプレート】の各項目を、初心者に分かりやすい日本語でつないでください。");
+  lines.push("項目の内容は変えないでください。言い回しだけ自然にしてください。");
+  lines.push("テンプレートにない情報は一切追加しないでください。");
   lines.push("");
 
-  // より良い手
+  // テンプレート
+  lines.push("【テンプレート】");
+
+  const reviewedJa = plan.context.reviewedMove.ja ?? plan.context.reviewedMove.usi;
+  lines.push(`■ あなたの手: ${reviewedJa}`);
+
   if (plan.betterIdea) {
-    lines.push("【より良い手】");
-    lines.push(`${plan.betterIdea.ja}: ${plan.betterIdea.reason}`);
-    if (plan.betterIdea.evalExpression) {
-      lines.push(`この手なら: ${plan.betterIdea.evalExpression}`);
-    }
-    lines.push("");
+    lines.push(`■ より良い手: ${plan.betterIdea.ja}。${plan.betterIdea.reason}`);
   }
 
   // なぜ差がついたか
   if (plan.whyChains.length > 0) {
-    lines.push("【なぜ差がついたか】");
-    for (const chain of plan.whyChains) {
-      const statements = chain.links.map((l) => l.statement).join("。そのため、");
-      lines.push(`- ${chain.topic}: ${statements}`);
-    }
-    lines.push("");
+    const chain = plan.whyChains[0];
+    const statements = chain.links.map((l) => l.statement).join("。");
+    lines.push(`■ なぜ差がついたか: ${statements}`);
   }
 
+  lines.push(`■ 次に見ること: ${plan.nextLookFor}`);
+
+  if (plan.retryQuestion) {
+    lines.push(`■ 考えてみよう: ${plan.retryQuestion}`);
+  }
+  lines.push("");
+
   // 事実
-  lines.push("【局面の事実】");
+  lines.push("【事実】");
   for (const fact of plan.facts) {
     lines.push(`- ${fact}`);
   }
   lines.push("");
 
-  // 次に同じ局面が来たら
-  lines.push("【次に同じ局面が来たら】");
-  lines.push(plan.nextLookFor);
-  lines.push("");
-
-  // 考えてみよう
-  if (plan.retryQuestion) {
-    lines.push("【考えてみよう】");
-    lines.push(plan.retryQuestion);
-    lines.push("");
-  }
-
   // 禁止事項
   lines.push("【禁止事項】");
+  lines.push("- テンプレートにない情報を追加しない");
+  lines.push("- 駒の位置関係を自分で推測しない");
+  lines.push("- エンジン候補手にない手について良し悪しを語らない");
   for (const claim of plan.forbiddenClaims) {
     lines.push(`- ${claim}`);
-  }
-  lines.push("");
-
-  // 出力形式（mate 時は詰み手順に特化）
-  const hasMateChain = plan.whyChains.some((c) => c.topic.includes("詰み"));
-  lines.push("【出力形式】");
-  if (hasMateChain) {
-    lines.push("この局面は詰みがある局面でした。詰み手順を正確に説明してください:");
-    lines.push("1. 実は詰みがある局面だったこと（1文）");
-    lines.push("2. 詰み手順を1手ずつ、各手の意味を添えて説明（手数分）");
-    lines.push("3. あなたの手ではなぜ詰みを逃したか（1文）");
-    lines.push("4. 詰みを見つけるコツ（1文）");
-  } else {
-    lines.push("以下の構成でレビューを書いてください:");
-    lines.push("1. あなたの手の評価（1文、責めない）");
-    lines.push("2. なぜ差がついたか（2-3文、因果を具体的に）");
-    lines.push("3. より良い手ならどうなったか（1-2文）");
-    lines.push("4. 次に同じような場面で何を見るか（1文）");
   }
 
   return lines.join("\n");

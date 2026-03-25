@@ -167,6 +167,10 @@ function buildReviewFallback(plan: MistakeReviewPlan): string {
 
   lines.push(`【あなたの手】${plan.context.reviewedMove.ja ?? plan.context.reviewedMove.usi}`);
 
+  if (plan.betterIdea) {
+    lines.push(`【より良い手】${plan.betterIdea.ja}。${plan.betterIdea.reason}`);
+  }
+
   if (plan.whyChains.length > 0) {
     const summary = plan.whyChains[0].links[0]?.statement ?? "";
     lines.push(`【要点】${summary}`);

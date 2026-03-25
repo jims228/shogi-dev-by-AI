@@ -165,7 +165,7 @@ describe("buildMistakeReviewPlan", () => {
 });
 
 describe("buildMistakeReviewPrompt", () => {
-  it("固定セクションを含む", () => {
+  it("template-first のセクションを含む", () => {
     const { canonical, engineData } = loadPosition("pos-001-opening.json");
 
     const plan = buildMistakeReviewPlan(
@@ -177,18 +177,19 @@ describe("buildMistakeReviewPrompt", () => {
 
     const prompt = buildMistakeReviewPrompt(plan);
 
-    expect(prompt).toContain("【あなたの手】");
-    expect(prompt).toContain("【より良い手】");
-    expect(prompt).toContain("【なぜ差がついたか】");
-    expect(prompt).toContain("【次に同じ局面が来たら】");
-    expect(prompt).toContain("【考えてみよう】");
+    expect(prompt).toContain("【テンプレート】");
+    expect(prompt).toContain("あなたの手");
+    expect(prompt).toContain("より良い手");
+    expect(prompt).toContain("なぜ差がついたか");
+    expect(prompt).toContain("次に見ること");
     expect(prompt).toContain("【禁止事項】");
+    expect(prompt).toContain("テンプレートにない情報を追加しない");
     expect(prompt).toContain("ユーザーを責めない");
     expect(prompt).toContain("▲3八銀");
     expect(prompt).toContain("▲7八金");
   });
 
-  it("mate局面のプロンプトに詰み手順説明の指示がある", () => {
+  it("mate局面のプロンプトに詰み手順が含まれる", () => {
     const { canonical, engineData } = loadPosition("pos-003-endgame.json");
 
     const plan = buildMistakeReviewPlan(
@@ -199,7 +200,8 @@ describe("buildMistakeReviewPrompt", () => {
     );
 
     const prompt = buildMistakeReviewPrompt(plan);
-    expect(prompt).toContain("詰み手順を正確に説明");
-    expect(prompt).toContain("詰みを見つけるコツ");
+    expect(prompt).toContain("詰み");
+    expect(prompt).toContain("▲5一飛打");
+    expect(prompt).toContain("テンプレートにない情報を追加しない");
   });
 });
