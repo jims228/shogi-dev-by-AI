@@ -160,9 +160,13 @@ async function handlePlanPipeline(
   }
 }
 
-function buildFallback(plan: ExplanationPlan, issues: string[]): string {
+function buildFallback(plan: ExplanationPlan, _issues: string[]): string {
+  const bestMoveInfo = plan.bestMove.ja && plan.bestMove.ja !== "不明"
+    ? `最善手は${plan.bestMove.ja}です。${plan.bestMove.reason}\n\n`
+    : "";
   const factsSummary = plan.facts.slice(0, 3).join("\n");
   return (
+    `${bestMoveInfo}` +
     `【局面の要点】\n${factsSummary}\n\n` +
     `【学びのポイント】\n${plan.teachingPoint}\n\n` +
     `※ 詳細な手順説明はまだ安定しなかったため、要点のみを表示しています。`
